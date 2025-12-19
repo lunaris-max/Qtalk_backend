@@ -6,32 +6,60 @@ import {
   MinLength,
   MaxLength,
   IsNumber,
+  Matches,
 } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-import { AccountStatus, Gender } from '@prisma/client';
+import { AccountStatus, Gender } from '../../../generated/prisma/client';
 
 export class CreateUserDto {
-  @IsOptional()
+  @ApiProperty({
+    example: 'user@example.com',
+    description: 'Unique user email',
+  })
   @IsEmail()
-  email?: string;
+  email: string;
 
+  @ApiProperty({
+    example: 'JohnDoe',
+    description: 'Unique user login',
+    minLength: 3,
+  })
   @IsString()
   login: string;
 
+  @ApiProperty({
+    example: 'StrongP4ssword',
+    description:
+      'Password must contain at least one uppercase letter and one number',
+    minLength: 8,
+  })
   @IsString()
-  @MinLength(6)
+  @MinLength(8)
+  @Matches(/(?=.*[A-Z])(?=.*\d)/)
   password: string;
 
+  @ApiPropertyOptional({
+    example: 'User',
+    minLength: 3,
+    maxLength: 20,
+  })
   @IsOptional()
   @IsString()
   @MinLength(3)
   @MaxLength(20)
   firstName?: string;
 
+  @ApiPropertyOptional({
+    example: 'SecondUserName',
+  })
   @IsOptional()
   @IsString()
   secondName?: string;
 
+  @ApiPropertyOptional({
+    example: 'Deskription',
+  })
   @IsOptional()
   @IsString()
   description?: string;
@@ -40,18 +68,34 @@ export class CreateUserDto {
   @IsString()
   avatar?: string;
 
+  @ApiPropertyOptional({
+    example: 'dark',
+    description: 'Profile UI theme',
+  })
   @IsOptional()
   @IsString()
   profileTheme?: string;
 
+  @ApiPropertyOptional({
+    example: 25,
+    minimum: 0,
+  })
   @IsOptional()
   @IsNumber()
   age?: number;
 
+  @ApiPropertyOptional({
+    enum: AccountStatus,
+    example: AccountStatus.ACTIVE,
+  })
   @IsOptional()
   @IsEnum(AccountStatus)
   accountStatus?: AccountStatus;
 
+  @ApiPropertyOptional({
+    enum: Gender,
+    example: Gender.MALE,
+  })
   @IsOptional()
   @IsEnum(Gender)
   gender?: Gender;

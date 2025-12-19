@@ -1,6 +1,6 @@
 generator client {
   provider        = "prisma-client"
-  output          = "../src/generated/prisma"
+  output   = "../src/generated"
   moduleFormat    = "cjs"
 }
 
@@ -10,7 +10,7 @@ datasource db {
 
 model User {
   id            Int           @id @default(autoincrement())
-  email         String?       @unique
+  email         String       @unique
   login         String        @unique
   password      String
   firstName     String?       @db.VarChar(20)
@@ -36,3 +36,6 @@ enum Gender {
   FEMALE
   OTHER
 }
+
+
+

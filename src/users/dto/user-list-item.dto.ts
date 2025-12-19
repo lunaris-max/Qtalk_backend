@@ -1,5 +1,4 @@
-export class PublicUser {
-  id: number;
+export class UserListItemDto {
   login: string;
   email: string;
   createdAt: Date;
