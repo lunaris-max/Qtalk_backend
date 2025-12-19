@@ -9,7 +9,7 @@ import {
   MinLength,
   Matches,
 } from 'class-validator';
-import { AccountStatus, Gender } from '../../../generated/prisma/client';
+import { AccountStatus, Gender } from '@prisma/client';
 
 export class UpdateUserDto {
   @ApiPropertyOptional({

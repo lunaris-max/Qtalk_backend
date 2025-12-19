@@ -8,14 +8,15 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from 'prisma/prisma.service';
-import { Prisma } from '../../generated/prisma/client';
+// import { Prisma } from '../../generated/prisma/client';
 import { PublicUserDto } from './dto/public-user.dto';
-import { AccountStatus } from 'src/generated/enums';
+// import { AccountStatus } from 'src/generated/enums';
 import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
 import { PaginatedResponseDto } from 'src/common/dto/paginated-response.dto';
 import { UserListItemDto } from './dto/user-list-item.dto';
 import { FindOneUserQueryDto } from './dto/find-one-user.query.dto';
 import { FullUserDto } from './dto/full-User.dto';
+import { AccountStatus, Prisma } from '@prisma/client';
 
 @Injectable()
 export class UsersService {

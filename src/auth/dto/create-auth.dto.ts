@@ -1,3 +1,4 @@
+import { AccountStatus, Gender } from '@prisma/client';
 import {
   IsEmail,
   IsOptional,
@@ -7,8 +8,6 @@ import {
   MaxLength,
   IsNumber,
 } from 'class-validator';
-
-import { AccountStatus, Gender } from '../../../generated/prisma/client';
 
 export class CreateAuthDto {
   @IsOptional()

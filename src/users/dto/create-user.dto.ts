@@ -10,7 +10,7 @@ import {
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-import { AccountStatus, Gender } from '../../../generated/prisma/client';
+import { AccountStatus, Gender } from '@prisma/client';
 
 export class CreateUserDto {
   @ApiProperty({
