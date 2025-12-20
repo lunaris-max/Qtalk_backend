@@ -1,35 +1,65 @@
-import { Injectable } from '@nestjs/common';
-import { CreateAuthDto } from './dto/create-auth.dto';
-import { UpdateAuthDto } from './dto/update-auth.dto';
-import { UsersService } from './../users/users.service';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { UsersService } from 'src/users/users.service';
+import { AccessTokenService } from './access-token/access-token.service';
+import { RefreshTokenService } from './refresh-token/refresh-token.service';
 import { CreateUserDto } from 'src/users/dto/create-user.dto';
-import { TokensService } from 'src/utils/tokens/token.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly usersService: UsersService,
-    private readonly tokensService: TokensService,
+    private readonly accessTokenService: AccessTokenService,
+    private readonly refreshTokenService: RefreshTokenService,
   ) {}
-  async create(createAuthDto: CreateAuthDto) {
-    const user = await this.usersService.create(createAuthDto);
 
-    return 'This action adds a new auth';
+  async register(dto: CreateUserDto) {
+    const user = await this.usersService.create(dto);
+
+    const accessToken = await this.accessTokenService.generate({
+      sub: user.id,
+      login: user.login,
+    });
+
+    const refreshToken = this.refreshTokenService.generate();
+
+    await this.refreshTokenService.save(user.id, refreshToken);
+
+    return {
+      user,
+      accessToken,
+      refreshToken,
+    };
   }
 
-  findAll() {
-    return `This action returns all auth`;
-  }
+  async refresh(refreshToken: string) {
+    if (!refreshToken) {
+      throw new UnauthorizedException('No refresh token');
+    }
 
-  findOne(id: number) {
-    return `This action returns a #${id} auth`;
-  }
+    // 1️⃣ check refresh token in Mongo
+    const stored = await this.refreshTokenService.validate(refreshToken);
 
-  update(id: number, updateAuthDto: UpdateAuthDto) {
-    return `This action updates a #${id} auth`;
-  }
+    // get user
+    const user = await this.usersService.findOne({
+      id: stored.userId,
+    });
 
-  remove(id: number) {
-    return `This action removes a #${id} auth`;
+    // new access token
+    const accessToken = this.accessTokenService.generate({
+      sub: user.id,
+      login: user.login,
+    });
+
+    // rotation refresh token
+    const newRefreshToken = await this.refreshTokenService.rotate(
+      refreshToken,
+      user.id,
+    );
+
+    return {
+      user,
+      accessToken,
+      refreshToken: newRefreshToken,
+    };
   }
 }
