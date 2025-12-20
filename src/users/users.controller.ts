@@ -6,38 +6,105 @@ import {
   Patch,
   Param,
   Delete,
+  HttpCode,
+  HttpStatus,
+  Query,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { routesV1 } from 'src/config/app.routes';
+import {
+  ApiBadRequestResponse,
+  ApiConflictResponse,
+  ApiCreatedResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
+import { PublicUserDto } from './dto/public-user.dto';
+import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
+import { PaginatedUsersDto } from './dto/paginated-users.dto';
+import { FindOneUserQueryDto } from './dto/find-one-user.query.dto';
+import { FullUserDto } from './dto/full-User.dto';
 
+@ApiTags('Users')
 @Controller(routesV1.version)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  // create
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Create a new user',
+    description: 'Creates a user and returns public user data',
+  })
+  @ApiCreatedResponse({
+    description: 'User successfully created',
+    type: PublicUserDto,
+  })
+  @ApiConflictResponse({
+    description: 'User already exists (duplicate login or email)',
+  })
+  @ApiBadRequestResponse({
+    description: 'Validation error',
+  })
   @Post(routesV1.user.root)
   create(@Body() createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto);
   }
 
+  // get all users
+  @ApiOperation({
+    summary: 'Find list of all users',
+    description: 'Return list of users with pagination',
+  })
   @Get(routesV1.user.root)
-  findAll() {
-    return this.usersService.findAll();
+  @ApiOkResponse({ type: PaginatedUsersDto })
+  async findAll(
+    @Query() query: PaginationQueryDto,
+  ): Promise<PaginatedUsersDto> {
+    return this.usersService.findAll(query);
   }
 
+  // find one
+  @ApiOperation({
+    summary: 'Get full user info',
+    description: 'return all public user info',
+  })
   @Get(routesV1.user.findOne)
-  findOne(@Param('id') id: string) {
-    return this.usersService.findOne(+id);
+  @ApiOkResponse({ type: FullUserDto })
+  async findOne(@Query() query: FindOneUserQueryDto): Promise<FullUserDto> {
+    return this.usersService.findOne(query);
   }
 
+  // update
+  @ApiOperation({
+    summary: 'Update user',
+    description: 'can update any field of user',
+  })
   @Patch(routesV1.user.update)
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.usersService.update(+id, updateUserDto);
+  @ApiOkResponse({ type: FullUserDto })
+  async update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateUserDto,
+  ): Promise<FullUserDto> {
+    return this.usersService.update(id, dto);
   }
 
+  // delete
+  @ApiOperation({
+    summary: 'Delete user',
+    description: 'Delete a user and returns void',
+  })
   @Delete(routesV1.user.delete)
-  remove(@Param('id') id: string) {
-    return this.usersService.remove(+id);
+  @ApiOkResponse({
+    description: 'User successfully deleted',
+  })
+  @ApiNotFoundResponse({ description: 'User not found' })
+  async delete(@Param('id', ParseIntPipe) id: number): Promise<void> {
+    await this.usersService.delete(id);
   }
 }
