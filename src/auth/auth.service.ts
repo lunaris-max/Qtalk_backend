@@ -1,35 +1,33 @@
 import { Injectable } from '@nestjs/common';
-import { CreateAuthDto } from './dto/create-auth.dto';
-import { UpdateAuthDto } from './dto/update-auth.dto';
-import { UsersService } from './../users/users.service';
+import { UsersService } from 'src/users/users.service';
+import { AccessTokenService } from './access-token/access-token.service';
+import { RefreshTokenService } from './refresh-token/refresh-token.service';
 import { CreateUserDto } from 'src/users/dto/create-user.dto';
-import { TokensService } from 'src/utils/tokens/token.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly usersService: UsersService,
-    private readonly tokensService: TokensService,
+    private readonly accessTokenService: AccessTokenService,
+    private readonly refreshTokenService: RefreshTokenService,
   ) {}
-  async create(createAuthDto: CreateAuthDto) {
-    const user = await this.usersService.create(createAuthDto);
 
-    return 'This action adds a new auth';
-  }
+  async register(dto: CreateUserDto) {
+    const user = await this.usersService.create(dto);
 
-  findAll() {
-    return `This action returns all auth`;
-  }
+    const accessToken = await this.accessTokenService.generate({
+      sub: user.id,
+      login: user.login,
+    });
 
-  findOne(id: number) {
-    return `This action returns a #${id} auth`;
-  }
+    const refreshToken = this.refreshTokenService.generate();
 
-  update(id: number, updateAuthDto: UpdateAuthDto) {
-    return `This action updates a #${id} auth`;
-  }
+    await this.refreshTokenService.save(user.id, refreshToken);
 
-  remove(id: number) {
-    return `This action removes a #${id} auth`;
+    return {
+      user,
+      accessToken,
+      refreshToken,
+    };
   }
 }

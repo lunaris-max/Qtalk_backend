@@ -6,38 +6,63 @@ import {
   Patch,
   Param,
   Delete,
+  Res,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateAuthDto } from './dto/create-auth.dto';
 import { UpdateAuthDto } from './dto/update-auth.dto';
 import { routesV1 } from 'src/config/app.routes';
+import { CreateUserDto } from 'src/users/dto/create-user.dto';
+import type { Response } from 'express';
+import {
+  ApiBody,
+  ApiCookieAuth,
+  ApiCreatedResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
+import { PublicUserDto } from 'src/users/dto/public-user.dto';
 
+@ApiTags('Auth')
 @Controller(routesV1.version)
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post(routesV1.auth.root)
-  create(@Body() createAuthDto: CreateAuthDto) {
-    return this.authService.create(createAuthDto);
-  }
+  @ApiOperation({
+    summary: 'User registration',
+    description:
+      'Registers a new user. Access and refresh tokens are set as HttpOnly cookies.',
+  })
+  @ApiBody({
+    type: CreateUserDto,
+  })
+  @ApiCreatedResponse({
+    description: 'User successfully registered',
+    type: PublicUserDto,
+  })
+  @ApiCookieAuth('access_token')
+  async register(
+    @Body() dto: CreateUserDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<PublicUserDto> {
+    const { user, accessToken, refreshToken } =
+      await this.authService.register(dto);
 
-  @Get(routesV1.auth.root)
-  findAll() {
-    return this.authService.findAll();
-  }
+    res.cookie('access_token', accessToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'strict',
+      maxAge: 15 * 60 * 1000,
+    });
 
-  @Get(routesV1.auth.findOne)
-  findOne(@Param('id') id: string) {
-    return this.authService.findOne(+id);
-  }
+    res.cookie('refresh_token', refreshToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'strict',
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+    });
 
-  @Patch(routesV1.auth.update)
-  update(@Param('id') id: string, @Body() updateAuthDto: UpdateAuthDto) {
-    return this.authService.update(+id, updateAuthDto);
-  }
-
-  @Delete(routesV1.auth.delete)
-  remove(@Param('id') id: string) {
-    return this.authService.remove(+id);
+    return user;
   }
 }
