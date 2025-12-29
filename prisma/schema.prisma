@@ -22,7 +22,32 @@ model User {
   gender        Gender        @default(OTHER)
   createdAt     DateTime      @default(now())
   updatedAt     DateTime
+
+  interests     UserInterest[] 
 }
+
+model Interest {
+  id          Int               @id @default(autoincrement())
+  name        String            @unique
+  category    InterestCategory  @default(OTHER)
+  createdAt  DateTime           @default(now())
+  updatedAt DateTime          @updatedAt
+
+  users       UserInterest[]
+}
+
+
+
+model UserInterest {
+  userId     Int
+  interestId Int
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  interest   Interest @relation(fields: [interestId], references: [id], onDelete: Cascade)
+
+  @@id([userId, interestId])
+}
+
 
 enum AccountStatus {
   ACTIVE
@@ -38,3 +63,12 @@ enum Gender {
 
 
 
+enum InterestCategory {
+  OTHER
+  SPORT
+  MUSIC
+  IT
+  ART
+  GAMES
+  EDUCATION
+}

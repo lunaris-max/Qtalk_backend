@@ -10,6 +10,7 @@ import {
   HttpStatus,
   Query,
   ParseIntPipe,
+  Put,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -22,6 +23,7 @@ import {
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
 import { PublicUserDto } from './dto/public-user.dto';
@@ -29,6 +31,7 @@ import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
 import { PaginatedUsersDto } from './dto/paginated-users.dto';
 import { FindOneUserQueryDto } from './dto/find-one-user.query.dto';
 import { FullUserDto } from './dto/full-User.dto';
+import { SetUserInterestsDto } from './dto/set-user-interests.dto';
 
 @ApiTags('Users')
 @Controller(routesV1.version)
@@ -107,4 +110,19 @@ export class UsersController {
   async delete(@Param('id', ParseIntPipe) id: number): Promise<void> {
     await this.usersService.delete(id);
   }
+
+  
+  @Put(':id/interests')
+  @ApiOperation({ summary: 'Set user interests (replace)' })
+  @ApiParam({ name: 'id', example: 1 })
+  setUserInterests(
+    @Param('id', ParseIntPipe) userId: number,
+    @Body() dto: SetUserInterestsDto,
+  ) {
+    return this.usersService.setUserInterests(
+      userId,
+      dto.interestIds,
+    )
+  }
 }
+

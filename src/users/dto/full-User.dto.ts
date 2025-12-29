@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { AccountStatus, Gender } from '@prisma/client';
+import { AccountStatus, Gender, InterestCategory } from '@prisma/client';
+import { InterestDto } from 'src/interest/dto/interest.dto';
 
 export class FullUserDto {
   @ApiProperty({
@@ -78,4 +79,15 @@ export class FullUserDto {
     description: 'User creation date',
   })
   createdAt: Date;
+  @ApiProperty({
+    type: [InterestDto],
+    description: 'User interests',
+  })
+
+    @ApiProperty({
+    enum: InterestCategory,
+    description:
+      'Available categories: OTHER, SPORT, MUSIC, IT, ART, GAMES, EDUCATION',
+  })
+  interests: InterestDto[]
 }

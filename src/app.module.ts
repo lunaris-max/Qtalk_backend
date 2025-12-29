@@ -6,6 +6,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PrismaModule } from 'prisma/prisma.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AuthModule } from './auth/auth.module';
+import { InterestModule } from './interest/interest.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { AuthModule } from './auth/auth.module';
         uri: config.get<string>('MONGO_DATABASE_URL'),
       }),
     }),
+    InterestModule,
   ],
   controllers: [AppController],
   providers: [AppService],
