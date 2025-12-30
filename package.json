@@ -22,6 +22,7 @@
     "migrate:dev": "prisma migrate dev",
     "migrate:prod": "cross-env NODE_ENV=production dotenv -e .env.prod -- prisma migrate deploy",
     "migrate:status:prod": "cross-env NODE_ENV=production dotenv -e .env.prod -- prisma migrate status",
+    "m1": "cross-env NODE_ENV=production dotenv -e .env.prod -- prisma migrate reset",
     "db:tables:prod": "cross-env NODE_ENV=production dotenv -e .env.prod -- prisma db execute --stdin \"SELECT tablename FROM pg_tables WHERE schemaname='public';\""
   },
   "dependencies": {
