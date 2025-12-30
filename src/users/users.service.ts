@@ -53,9 +53,7 @@ export class UsersService {
   }
 
   // find all
-  async findAll(
-    query: PaginationQueryDto,
-  ): Promise<PaginatedResponseDto<UserListItemDto>> {
+  async findAll(query: PaginationQueryDto): Promise<PaginatedResponseDto<UserListItemDto>> {
     const page = query.page ?? 1;
     const limit = query.limit ?? 10;
     const skip = (page - 1) * limit;
@@ -91,9 +89,7 @@ export class UsersService {
     const { id, login, email } = query;
 
     if (!id && !login && !email) {
-      throw new BadRequestException(
-        'Provide at least one search parameter: id, login or email',
-      );
+      throw new BadRequestException('Provide at least one search parameter: id, login or email');
     }
 
     const or: Prisma.UserWhereInput[] = [];
@@ -118,16 +114,16 @@ export class UsersService {
         gender: true,
         createdAt: true,
         interests: {
-        select: {
-          interest: {
-            select: {
-              id: true,
-              name: true,
-              category: true,
+          select: {
+            interest: {
+              select: {
+                id: true,
+                name: true,
+                category: true,
+              },
             },
           },
         },
-      },
       },
     });
 
@@ -136,96 +132,92 @@ export class UsersService {
     }
     console.log(user);
 
-return {
-    ...user,
-    interests: user.interests.map((ui) => ui.interest),
-  }
+    return {
+      ...user,
+      interests: user.interests.map((ui) => ui.interest),
+    };
   }
 
   // update
-async update(
-  id: number,
-  dto: UpdateUserDto,
-): Promise<FullUserDto> {
-  if (Object.keys(dto).length === 0) {
-    throw new BadRequestException('No fields provided for update')
-  }
-
-  const data: Prisma.UserUpdateInput = {
-    email: dto.email,
-    login: dto.login,
-    firstName: dto.firstName,
-    secondName: dto.secondName,
-    description: dto.description,
-    avatar: dto.avatar,
-    profileTheme: dto.profileTheme,
-    age: dto.age,
-    accountStatus: dto.accountStatus,
-    gender: dto.gender,
-    updatedAt: new Date(),
-  }
-
-  if (dto.password) {
-    data.password = await bcrypt.hash(dto.password, 10)
-  }
-
-  try {
-    await this.prisma.user.update({
-      where: { id },
-      data,
-    })
-  } catch (e) {
-    if (e instanceof Prisma.PrismaClientKnownRequestError) {
-      if (e.code === 'P2025') {
-        throw new NotFoundException('User not found')
-      }
-      if (e.code === 'P2002') {
-        throw new ConflictException('Email or login already exists')
-      }
+  async update(id: number, dto: UpdateUserDto): Promise<FullUserDto> {
+    if (Object.keys(dto).length === 0) {
+      throw new BadRequestException('No fields provided for update');
     }
-    throw e
-  }
 
-  // 🔽 ПОВЕРТАЄМО ПОВНОГО ЮЗЕРА З ІНТЕРЕСАМИ
-  const user = await this.prisma.user.findUnique({
-    where: { id },
-    select: {
-      id: true,
-      email: true,
-      login: true,
-      firstName: true,
-      secondName: true,
-      description: true,
-      avatar: true,
-      profileTheme: true,
-      age: true,
-      accountStatus: true,
-      gender: true,
-      createdAt: true,
-      interests: {
-        select: {
-          interest: {
-            select: {
-              id: true,
-              name: true,
-              category: true,
+    const data: Prisma.UserUpdateInput = {
+      email: dto.email,
+      login: dto.login,
+      firstName: dto.firstName,
+      secondName: dto.secondName,
+      description: dto.description,
+      avatar: dto.avatar,
+      profileTheme: dto.profileTheme,
+      age: dto.age,
+      accountStatus: dto.accountStatus,
+      gender: dto.gender,
+      updatedAt: new Date(),
+    };
+
+    if (dto.password) {
+      data.password = await bcrypt.hash(dto.password, 10);
+    }
+
+    try {
+      await this.prisma.user.update({
+        where: { id },
+        data,
+      });
+    } catch (e) {
+      if (e instanceof Prisma.PrismaClientKnownRequestError) {
+        if (e.code === 'P2025') {
+          throw new NotFoundException('User not found');
+        }
+        if (e.code === 'P2002') {
+          throw new ConflictException('Email or login already exists');
+        }
+      }
+      throw e;
+    }
+
+    // 🔽 ПОВЕРТАЄМО ПОВНОГО ЮЗЕРА З ІНТЕРЕСАМИ
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        email: true,
+        login: true,
+        firstName: true,
+        secondName: true,
+        description: true,
+        avatar: true,
+        profileTheme: true,
+        age: true,
+        accountStatus: true,
+        gender: true,
+        createdAt: true,
+        interests: {
+          select: {
+            interest: {
+              select: {
+                id: true,
+                name: true,
+                category: true,
+              },
             },
           },
         },
       },
-    },
-  })
+    });
 
-  if (!user) {
-    throw new NotFoundException('User not found')
-  }
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
 
     return {
-    ...user,
-    interests: user.interests.map((ui) => ui.interest),
+      ...user,
+      interests: user.interests.map((ui) => ui.interest),
+    };
   }
-}
-
 
   // delete
   async delete(id: number): Promise<void> {
@@ -243,37 +235,29 @@ async update(
     }
   }
 
-
-
-
   // set interest
-   async setUserInterests(
-    userId: number,
-    interestIds: number[],
-  ) {
+  async setUserInterests(userId: number, interestIds: number[]) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-    })
+    });
 
     if (!user) {
-      throw new NotFoundException('User not found')
+      throw new NotFoundException('User not found');
     }
 
     if (interestIds.length === 0) {
       await this.prisma.userInterest.deleteMany({
         where: { userId },
-      })
-      return { success: true }
+      });
+      return { success: true };
     }
 
     const validCount = await this.prisma.interest.count({
       where: { id: { in: interestIds } },
-    })
+    });
 
     if (validCount !== interestIds.length) {
-      throw new NotFoundException(
-        'One or more interests not found',
-      )
+      throw new NotFoundException('One or more interests not found');
     }
 
     await this.prisma.$transaction([
@@ -286,11 +270,8 @@ async update(
           interestId,
         })),
       }),
-    ])
+    ]);
 
-    return { success: true }
+    return { success: true };
   }
-
 }
-
-
