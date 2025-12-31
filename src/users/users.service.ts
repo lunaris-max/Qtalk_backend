@@ -22,26 +22,64 @@ import { AccountStatus, Prisma } from '@prisma/client';
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
+  // async create(dto: CreateUserDto): Promise<PublicUserDto> {
+  //   const hashedPassword = await bcrypt.hash(dto.password, 10);
+
+  //   try {
+  //     return await this.prisma.user.create({
+  //       data: {
+  //         login: dto.login,
+  //         email: dto.email,
+  //         password: hashedPassword,
+  //         accountStatus: AccountStatus.ACTIVE,
+  //         updatedAt: new Date(),
+  //       },
+  //       select: {
+  //         id: true,
+  //         login: true,
+  //         email: true,
+  //         createdAt: true,
+  //         accountStatus: true,
+  //       },
+  //     });
+  //   } catch (e) {
+  //     if (e instanceof Prisma.PrismaClientKnownRequestError) {
+  //       if (e.code === 'P2002') {
+  //         throw new ConflictException('User already exists');
+  //       }
+  //     }
+  //     throw e;
+  //   }
+  // }
+
   async create(dto: CreateUserDto): Promise<PublicUserDto> {
     const hashedPassword = await bcrypt.hash(dto.password, 10);
 
     try {
-      return await this.prisma.user.create({
+      const user = await this.prisma.user.create({
         data: {
-          login: dto.login,
-          email: dto.email,
-          password: hashedPassword,
-          accountStatus: AccountStatus.ACTIVE,
-          updatedAt: new Date(),
+          status: AccountStatus.ACTIVE,
+          authMethods: {
+            create: {
+              provider: AuthProvider.LOCAL,
+              providerId: dto.email, // або dto.login, якщо так вирішиш
+              email: dto.email,
+              passwordHash: hashedPassword,
+            },
+          },
         },
         select: {
           id: true,
-          login: true,
-          email: true,
+          status: true,
           createdAt: true,
-          accountStatus: true,
         },
       });
+
+      return {
+        id: user.id,
+        accountStatus: user.status,
+        createdAt: user.createdAt,
+      };
     } catch (e) {
       if (e instanceof Prisma.PrismaClientKnownRequestError) {
         if (e.code === 'P2002') {

@@ -14,6 +14,8 @@ model User {
 
   authMethods AuthMethod[]
   data        UserData?
+  userInterests UserInterest[]
+
 }
 
 model AuthMethod {
@@ -83,15 +85,18 @@ enum Gender {
 enum AuthProvider {
   LOCAL
   GOOGLE
+  FACEBOOK
+  APPLEID
   GITHUB
 }
 
 enum InterestCategory {
   OTHER
-  SPORT
-  MUSIC
-  IT
-  ART
-  GAMES
-  EDUCATION
+  ENTERTAINMENT
+  CREATIVITY
+  LEARNING
+  DEEP_TALKS
+  SPORTS_FITNESS
+  LIFESTYLE
 }
+
