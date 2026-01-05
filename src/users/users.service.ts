@@ -226,7 +226,6 @@ export class UsersService {
   // update
   async update(id: string, dto: UpdateUserDto): Promise<FullUserDto> {
     return this.prisma.$transaction(async (tx) => {
-      // 1️⃣ Перевіряємо, що user існує
       const user = await tx.user.findUnique({
         where: { id },
         select: {
@@ -238,7 +237,6 @@ export class UsersService {
         throw new NotFoundException('User not found');
       }
 
-      // 2️⃣ Оновлюємо auth (login / email) якщо передані
       if (dto.login || dto.email) {
         await tx.authMethod.upsert({
           where: {
@@ -261,7 +259,6 @@ export class UsersService {
         });
       }
 
-      // 3️⃣ Оновлюємо / створюємо UserData
       if (
         dto.firstName !== undefined ||
         dto.lastName !== undefined ||
@@ -295,7 +292,6 @@ export class UsersService {
         });
       }
 
-      // 4️⃣ Оновлюємо interests (повна заміна)
       if (dto.interestIds) {
         await tx.userInterest.deleteMany({
           where: { userId: id },
@@ -311,7 +307,6 @@ export class UsersService {
         }
       }
 
-      // 5️⃣ Повертаємо актуальний user
       const updatedUser = await tx.user.findUnique({
         where: { id },
         select: {
