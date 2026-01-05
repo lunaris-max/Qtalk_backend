@@ -3,10 +3,14 @@ import { UsersService } from 'src/users/users.service';
 import { AccessTokenService } from './access-token/access-token.service';
 import { RefreshTokenService } from './refresh-token/refresh-token.service';
 import { CreateUserDto } from 'src/users/dto/create-user.dto';
-
+import { PrismaService } from 'prisma/prisma.service';
+import { AccountStatus, AuthProvider, User } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
+import type { Response, Request } from 'express';
 @Injectable()
 export class AuthService {
   constructor(
+    private prisma: PrismaService,
     private readonly usersService: UsersService,
     private readonly accessTokenService: AccessTokenService,
     private readonly refreshTokenService: RefreshTokenService,
@@ -68,5 +72,91 @@ export class AuthService {
       accountStatus: user.accountStatus,
       refreshToken: newRefreshToken,
     };
+  }
+
+  // LOCAL
+  async validateLocal(login: string, password: string) {
+    const auth = await this.prisma.authMethod.findFirst({
+      where: {
+        provider: AuthProvider.LOCAL,
+        OR: [{ login }, { email: login }],
+      },
+      include: { user: true },
+    });
+
+    console.log(auth);
+    console.log('auth here --------------------------------');
+
+    if (!auth || !auth.passwordHash) return null;
+
+    const match = await bcrypt.compare(password, auth.passwordHash);
+    console.log(match);
+    if (!match) return null;
+
+    return auth.user;
+  }
+
+  // SOCIAL (Google / GitHub / Facebook)
+  async loginSocial(profile: {
+    provider: AuthProvider;
+    providerId: string;
+    email?: string;
+    login?: string;
+  }) {
+    let auth = await this.prisma.authMethod.findUnique({
+      where: {
+        provider_providerId: {
+          provider: profile.provider,
+          providerId: profile.providerId,
+        },
+      },
+      include: { user: true },
+    });
+
+    if (!auth) {
+      const user = await this.prisma.user.create({
+        data: {
+          accountStatus: AccountStatus.ACTIVE,
+          authMethods: {
+            create: profile,
+          },
+        },
+      });
+      return user;
+    }
+
+    return auth.user;
+  }
+
+  issueTokens(payload: { id: string; identifier: string }, res: Response) {
+    if (!payload.identifier) {
+      payload.identifier = 'true';
+    }
+    if (!payload.id || !payload.identifier) {
+      throw new UnauthorizedException();
+    }
+
+    const accessToken = this.accessTokenService.generate({
+      sub: payload.id,
+      login: payload.identifier,
+    });
+
+    const refreshToken = this.refreshTokenService.generate();
+
+    this.refreshTokenService.save(payload.id, refreshToken);
+
+    res.cookie('access_token', accessToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+      maxAge: 15 * 60 * 1000,
+    });
+
+    res.cookie('refresh_token', refreshToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+    });
   }
 }

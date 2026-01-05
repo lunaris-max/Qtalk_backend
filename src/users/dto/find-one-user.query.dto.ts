@@ -4,10 +4,10 @@ import { Type } from 'class-transformer';
 
 export class FindOneUserQueryDto {
   @ApiPropertyOptional({ example: 1 })
-  @Type(() => Number)
+  @Type(() => String)
   @IsInt()
   @IsOptional()
-  id?: number;
+  id?: string;
 
   @ApiPropertyOptional({ example: 'JohnDoe' })
   @IsString()

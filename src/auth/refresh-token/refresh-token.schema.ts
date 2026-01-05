@@ -4,7 +4,7 @@ import { Document } from 'mongoose';
 @Schema({ timestamps: true })
 export class RefreshToken {
   @Prop({ required: true, index: true })
-  userId: number;
+  userId: string;
 
   @Prop({ required: true })
   tokenHash: string;

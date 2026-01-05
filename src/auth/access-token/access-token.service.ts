@@ -6,7 +6,7 @@ import { AccessTokenPayload } from './access-token.payload';
 export class AccessTokenService {
   constructor(private readonly jwtService: JwtService) {}
 
-  generate(payload: AccessTokenPayload): Promise<string> {
-    return this.jwtService.signAsync(payload);
+  generate(payload: AccessTokenPayload): string {
+    return this.jwtService.sign(payload);
   }
 }
