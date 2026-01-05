@@ -29,7 +29,7 @@ export class CreateAuthDto {
 
   @IsOptional()
   @IsString()
-  secondName?: string;
+  LastName?: string;
 
   @IsOptional()
   @IsString()

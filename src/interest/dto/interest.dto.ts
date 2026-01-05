@@ -1,16 +1,21 @@
-import { ApiProperty } from '@nestjs/swagger'
-import { InterestCategory } from '@prisma/client'
+import { ApiProperty } from '@nestjs/swagger';
+import { InterestCategory } from '@prisma/client';
 
 export class InterestDto {
-  @ApiProperty({ example: 1 })
-  id: number
+  @ApiProperty({
+    example: '550e8400-e29b-41d4-a716-446655440000',
+    description: 'Interest ID (UUID)',
+  })
+  id: string;
 
-  @ApiProperty({ example: 'Football' })
-  name: string
+  @ApiProperty({
+    example: 'Music',
+  })
+  name: string;
 
   @ApiProperty({
     enum: InterestCategory,
-    example: InterestCategory.SPORT,
+    example: InterestCategory.ENTERTAINMENT,
   })
-  category: InterestCategory
+  category: InterestCategory;
 }

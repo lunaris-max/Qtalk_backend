@@ -1,4 +1,4 @@
 export interface AccessTokenPayload {
-  sub: number;
+  sub: string;
   login: string;
 }

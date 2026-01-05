@@ -3,13 +3,13 @@ import { AccountStatus, Gender } from '@prisma/client';
 
 export class PublicUserDto {
   @ApiProperty({ example: 1 })
-  id: number;
+  id: string;
 
   @ApiProperty({ example: 'user' })
-  login: string;
+  login?: string;
 
   @ApiProperty({ example: 'user@example.com', required: false })
-  email: string;
+  email?: string;
 
   @ApiProperty({
     example: '2025-12-19T10:30:00.000Z',

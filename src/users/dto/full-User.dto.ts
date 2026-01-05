@@ -1,67 +1,61 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { AccountStatus, Gender, InterestCategory } from '@prisma/client';
+import { AccountStatus, Gender } from '@prisma/client';
 import { InterestDto } from 'src/interest/dto/interest.dto';
 
 export class FullUserDto {
   @ApiProperty({
-    example: 1,
-    description: 'User ID',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+    description: 'User ID (UUID)',
   })
-  id: number;
+  id: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: 'user@example.com',
-    description: 'Unique user email',
+    description: 'User email (LOCAL auth)',
   })
-  email: string;
+  email?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: 'user_login',
-    description: 'Unique user login',
+    description: 'User login (LOCAL auth)',
   })
-  login: string;
+  login?: string;
 
   @ApiPropertyOptional({
     example: 'User',
-    nullable: true,
     minLength: 3,
     maxLength: 20,
   })
-  firstName: string | null;
+  firstName?: string;
 
   @ApiPropertyOptional({
     example: 'SecondUserName',
-    nullable: true,
   })
-  secondName: string | null;
+  lastName?: string;
 
   @ApiPropertyOptional({
     example: 'Description',
-    nullable: true,
   })
-  description: string | null;
+  description?: string;
 
   @ApiPropertyOptional({
     example: 'https://cdn.example.com/avatar.png',
-    nullable: true,
   })
-  avatar: string | null;
+  avatar?: string;
 
   @ApiPropertyOptional({
     example: 'dark',
     description: 'Profile UI theme',
-    nullable: true,
   })
-  profileTheme: string | null;
+  profileTheme?: string;
 
   @ApiPropertyOptional({
     example: 25,
     minimum: 0,
-    nullable: true,
   })
-  age: number | null;
+  age?: number;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     enum: AccountStatus,
     example: AccountStatus.ACTIVE,
   })
@@ -70,24 +64,18 @@ export class FullUserDto {
   @ApiPropertyOptional({
     enum: Gender,
     example: Gender.MALE,
-    nullable: true,
   })
-  gender: Gender | null;
+  gender?: Gender;
 
   @ApiProperty({
     example: '2025-01-10T12:00:00.000Z',
     description: 'User creation date',
   })
   createdAt: Date;
+
   @ApiProperty({
     type: [InterestDto],
     description: 'User interests',
   })
-
-    @ApiProperty({
-    enum: InterestCategory,
-    description:
-      'Available categories: OTHER, SPORT, MUSIC, IT, ART, GAMES, EDUCATION',
-  })
-  interests: InterestDto[]
+  interests: InterestDto[];
 }

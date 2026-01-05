@@ -1,6 +1,6 @@
 generator client {
-  provider        = "prisma-client-js"
-  moduleFormat    = "cjs"
+  provider     = "prisma-client-js"
+  moduleFormat = "cjs"
 }
 
 datasource db {
@@ -8,67 +8,93 @@ datasource db {
 }
 
 model User {
-  id            Int           @id @default(autoincrement())
-  email         String       @unique
-  login         String        @unique
-  password      String
-  firstName     String?       @db.VarChar(20)
-  secondName    String?
-  description   String?
-  avatar        String?
-  profileTheme  String?
-  age           Int?
+  id            String        @id @default(uuid())
   accountStatus AccountStatus @default(ACTIVE)
-  gender        Gender        @default(OTHER)
   createdAt     DateTime      @default(now())
-  updatedAt     DateTime
 
-  interests     UserInterest[] 
+  authMethods   AuthMethod[]
+  data          UserData?
+  userInterests UserInterest[]
+}
+
+model AuthMethod {
+  id           String       @id @default(uuid())
+  provider     AuthProvider
+  providerId   String
+  email        String?      @unique
+  login        String?      @unique
+  passwordHash String?
+  userId       String
+  createdAt    DateTime     @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([provider, providerId])
+}
+
+model UserData {
+  id           String   @id @default(uuid())
+  userId       String   @unique
+  firstName    String?  @db.VarChar(20)
+  lastName   String?  @db.VarChar(20)
+  description  String?
+  avatar       String?
+  profileTheme String?
+  age          Int?
+  gender       Gender   @default(UNSPECIFIED)
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
 }
 
 model Interest {
-  id          Int               @id @default(autoincrement())
-  name        String            @unique
-  category    InterestCategory  @default(OTHER)
-  createdAt  DateTime           @default(now())
-  updatedAt DateTime          @updatedAt
+  id        String           @id @default(uuid())
+  name      String           @unique
+  category  InterestCategory @default(OTHER)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
 
-  users       UserInterest[]
+  users UserInterest[]
 }
 
-
-
 model UserInterest {
-  userId     Int
-  interestId Int
+  userId     String
+  interestId String
 
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  interest   Interest @relation(fields: [interestId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  interest Interest @relation(fields: [interestId], references: [id], onDelete: Cascade)
 
   @@id([userId, interestId])
 }
-
 
 enum AccountStatus {
   ACTIVE
   BLOCKED
   BANNED
+  DELETED
 }
 
 enum Gender {
   MALE
   FEMALE
   OTHER
+  UNSPECIFIED
 }
 
-
+enum AuthProvider {
+  LOCAL
+  GOOGLE
+  FACEBOOK
+  APPLEID
+  GITHUB
+}
 
 enum InterestCategory {
   OTHER
-  SPORT
-  MUSIC
-  IT
-  ART
-  GAMES
-  EDUCATION
+  ENTERTAINMENT
+  CREATIVITY
+  LEARNING
+  DEEP_TALKS
+  SPORTS_FITNESS
+  LIFESTYLE
 }

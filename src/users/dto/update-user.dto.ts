@@ -8,12 +8,19 @@ import {
   MaxLength,
   MinLength,
   Matches,
+  IsUUID,
+  IsArray,
 } from 'class-validator';
-import { AccountStatus, Gender } from '@prisma/client';
+import { Gender } from '@prisma/client';
 
 export class UpdateUserDto {
+  /* =========================
+     AUTH (LOCAL)
+     ========================= */
+
   @ApiPropertyOptional({
     example: 'user@example.com',
+    description: 'User email (LOCAL auth)',
   })
   @IsOptional()
   @IsEmail()
@@ -22,6 +29,7 @@ export class UpdateUserDto {
   @ApiPropertyOptional({
     example: 'user_login',
     minLength: 3,
+    description: 'User login (LOCAL auth)',
   })
   @IsOptional()
   @IsString()
@@ -31,8 +39,7 @@ export class UpdateUserDto {
   @ApiPropertyOptional({
     example: 'StrongP4ssword',
     minLength: 8,
-    description:
-      'Password must contain at least one uppercase letter and one number',
+    description: 'Password must contain at least one uppercase letter and one number',
   })
   @IsOptional()
   @IsString()
@@ -40,45 +47,74 @@ export class UpdateUserDto {
   @Matches(/(?=.*[A-Z])(?=.*\d)/)
   password?: string;
 
-  @ApiPropertyOptional({ nullable: true })
+  /* =========================
+     PROFILE (UserData)
+     ========================= */
+
+  @ApiPropertyOptional({
+    example: 'User',
+    minLength: 3,
+    maxLength: 20,
+  })
   @IsOptional()
   @IsString()
   @MinLength(3)
   @MaxLength(20)
-  firstName?: string | null;
+  firstName?: string;
 
-  @ApiPropertyOptional({ nullable: true })
+  @ApiPropertyOptional({
+    example: 'SecondUserName',
+  })
   @IsOptional()
   @IsString()
-  secondName?: string | null;
+  lastName?: string;
 
-  @ApiPropertyOptional({ nullable: true })
+  @ApiPropertyOptional({
+    example: 'Short description',
+  })
   @IsOptional()
   @IsString()
-  description?: string | null;
+  description?: string;
 
-  @ApiPropertyOptional({ nullable: true })
+  @ApiPropertyOptional({
+    example: 'https://cdn.example.com/avatar.png',
+  })
   @IsOptional()
   @IsString()
-  avatar?: string | null;
+  avatar?: string;
 
-  @ApiPropertyOptional({ nullable: true })
+  @ApiPropertyOptional({
+    example: 'dark',
+    description: 'Profile UI theme',
+  })
   @IsOptional()
   @IsString()
-  profileTheme?: string | null;
+  profileTheme?: string;
 
-  @ApiPropertyOptional({ nullable: true })
+  @ApiPropertyOptional({
+    example: 25,
+    minimum: 0,
+  })
   @IsOptional()
   @IsNumber()
-  age?: number | null;
+  age?: number;
 
-  @ApiPropertyOptional({ enum: AccountStatus })
-  @IsOptional()
-  @IsEnum(AccountStatus)
-  accountStatus?: AccountStatus;
-
-  @ApiPropertyOptional({ enum: Gender, nullable: true })
+  @ApiPropertyOptional({
+    enum: Gender,
+    example: Gender.MALE,
+  })
   @IsOptional()
   @IsEnum(Gender)
   gender?: Gender;
+
+  // interest
+
+  @ApiPropertyOptional({
+    example: ['550e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440111'],
+    description: 'List of interest IDs (UUID)',
+  })
+  @IsOptional()
+  @IsArray()
+  @IsUUID('4', { each: true })
+  interestIds?: string[];
 }
