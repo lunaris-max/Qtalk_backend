@@ -30,8 +30,7 @@ export class CreateUserDto {
 
   @ApiProperty({
     example: 'StrongP4ssword',
-    description:
-      'Password must contain at least one uppercase letter and one number',
+    description: 'Password must contain at least one uppercase letter and one number',
     minLength: 8,
   })
   @IsString()
@@ -55,10 +54,10 @@ export class CreateUserDto {
   })
   @IsOptional()
   @IsString()
-  secondName?: string;
+  lastName?: string;
 
   @ApiPropertyOptional({
-    example: 'Deskription',
+    example: 'Description',
   })
   @IsOptional()
   @IsString()

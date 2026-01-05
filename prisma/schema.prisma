@@ -8,21 +8,21 @@ datasource db {
 }
 
 model User {
-  id        String        @id @default(uuid())
-  status    AccountStatus @default(ACTIVE)
-  createdAt DateTime      @default(now())
+  id            String        @id @default(uuid())
+  accountStatus AccountStatus @default(ACTIVE)
+  createdAt     DateTime      @default(now())
 
-  authMethods AuthMethod[]
-  data        UserData?
+  authMethods   AuthMethod[]
+  data          UserData?
   userInterests UserInterest[]
-
 }
 
 model AuthMethod {
   id           String       @id @default(uuid())
   provider     AuthProvider
   providerId   String
-  email        String?
+  email        String?      @unique
+  login        String?      @unique
   passwordHash String?
   userId       String
   createdAt    DateTime     @default(now())
@@ -36,7 +36,7 @@ model UserData {
   id           String   @id @default(uuid())
   userId       String   @unique
   firstName    String?  @db.VarChar(20)
-  secondName   String?  @db.VarChar(20)
+  lastName   String?  @db.VarChar(20)
   description  String?
   avatar       String?
   profileTheme String?
@@ -48,25 +48,24 @@ model UserData {
 }
 
 model Interest {
-  id           String   @id @default(uuid())
-  name        String            @unique
-  category    InterestCategory  @default(OTHER)
-  createdAt  DateTime           @default(now())
-  updatedAt DateTime          @updatedAt
+  id        String           @id @default(uuid())
+  name      String           @unique
+  category  InterestCategory @default(OTHER)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
 
-  users       UserInterest[]
+  users UserInterest[]
 }
 
 model UserInterest {
   userId     String
   interestId String
 
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  interest   Interest @relation(fields: [interestId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  interest Interest @relation(fields: [interestId], references: [id], onDelete: Cascade)
 
   @@id([userId, interestId])
 }
-
 
 enum AccountStatus {
   ACTIVE
@@ -99,4 +98,3 @@ enum InterestCategory {
   SPORTS_FITNESS
   LIFESTYLE
 }
-

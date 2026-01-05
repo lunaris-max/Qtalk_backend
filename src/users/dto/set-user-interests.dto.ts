@@ -1,6 +1,6 @@
-import { ApiProperty } from '@nestjs/swagger'
-import { IsArray, ArrayUnique, IsInt } from 'class-validator'
-import { Type } from 'class-transformer'
+import { ApiProperty } from '@nestjs/swagger';
+import { IsArray, ArrayUnique, IsInt } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class SetUserInterestsDto {
   @ApiProperty({
@@ -9,7 +9,7 @@ export class SetUserInterestsDto {
   })
   @IsArray()
   @ArrayUnique()
-  @Type(() => Number)
+  @Type(() => String)
   @IsInt({ each: true })
-  interestIds: number[]
+  interestIds: string[];
 }

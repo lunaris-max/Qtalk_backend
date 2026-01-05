@@ -15,7 +15,11 @@ export class AuthService {
   async register(dto: CreateUserDto) {
     const user = await this.usersService.create(dto);
 
-    const accessToken = await this.accessTokenService.generate({
+    if (!user.login) {
+      throw new UnauthorizedException('User login is missing');
+    }
+
+    const accessToken = this.accessTokenService.generate({
       sub: user.id,
       login: user.login,
     });
@@ -31,18 +35,23 @@ export class AuthService {
     };
   }
 
+  // refresh
   async refresh(refreshToken: string) {
     if (!refreshToken) {
       throw new UnauthorizedException('No refresh token');
     }
 
-    // 1️⃣ check refresh token in Mongo
+    // check refresh token in Mongo
     const stored = await this.refreshTokenService.validate(refreshToken);
 
     // get user
     const user = await this.usersService.findOne({
       id: stored.userId,
     });
+
+    if (!user.login) {
+      throw new UnauthorizedException('User login is missing');
+    }
 
     // new access token
     const accessToken = this.accessTokenService.generate({
@@ -51,14 +60,12 @@ export class AuthService {
     });
 
     // rotation refresh token
-    const newRefreshToken = await this.refreshTokenService.rotate(
-      refreshToken,
-      user.id,
-    );
+    const newRefreshToken = await this.refreshTokenService.rotate(refreshToken, user.id);
 
     return {
       user,
       accessToken,
+      accountStatus: user.accountStatus,
       refreshToken: newRefreshToken,
     };
   }

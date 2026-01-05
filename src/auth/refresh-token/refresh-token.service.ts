@@ -17,7 +17,7 @@ export class RefreshTokenService {
     return randomBytes(64).toString('hex');
   }
 
-  async save(userId: number, token: string): Promise<void> {
+  async save(userId: string, token: string): Promise<void> {
     const hash = await bcrypt.hash(token, 10);
 
     await this.model.create({
@@ -36,7 +36,7 @@ export class RefreshTokenService {
     throw new UnauthorizedException('Invalid refresh token');
   }
 
-  async rotate(oldToken: string, userId: number): Promise<string> {
+  async rotate(oldToken: string, userId: string): Promise<string> {
     await this.model.deleteOne({ userId });
 
     const newToken = this.generate();

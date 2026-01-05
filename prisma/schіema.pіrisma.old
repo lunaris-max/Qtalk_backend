@@ -13,7 +13,7 @@ model User {
   login         String        @unique
   password      String
   firstName     String?       @db.VarChar(20)
-  secondName    String?
+  LastName    String?
   description   String?
   avatar        String?
   profileTheme  String?

@@ -66,9 +66,7 @@ export class UsersController {
   })
   @Get(routesV1.user.root)
   @ApiOkResponse({ type: PaginatedUsersDto })
-  async findAll(
-    @Query() query: PaginationQueryDto,
-  ): Promise<PaginatedUsersDto> {
+  async findAll(@Query() query: PaginationQueryDto): Promise<PaginatedUsersDto> {
     return this.usersService.findAll(query);
   }
 
@@ -91,7 +89,7 @@ export class UsersController {
   @Patch(routesV1.user.update)
   @ApiOkResponse({ type: FullUserDto })
   async update(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id', ParseIntPipe) id: string,
     @Body() dto: UpdateUserDto,
   ): Promise<FullUserDto> {
     return this.usersService.update(id, dto);
@@ -107,22 +105,14 @@ export class UsersController {
     description: 'User successfully deleted',
   })
   @ApiNotFoundResponse({ description: 'User not found' })
-  async delete(@Param('id', ParseIntPipe) id: number): Promise<void> {
+  async delete(@Param('id', ParseIntPipe) id: string): Promise<void> {
     await this.usersService.delete(id);
   }
 
-  
   @Put(':id/interests')
   @ApiOperation({ summary: 'Set user interests (replace)' })
   @ApiParam({ name: 'id', example: 1 })
-  setUserInterests(
-    @Param('id', ParseIntPipe) userId: number,
-    @Body() dto: SetUserInterestsDto,
-  ) {
-    return this.usersService.setUserInterests(
-      userId,
-      dto.interestIds,
-    )
+  setUserInterests(@Param('id', ParseIntPipe) userId: string, @Body() dto: SetUserInterestsDto) {
+    return this.usersService.setUserInterests(userId, dto.interestIds);
   }
 }
-

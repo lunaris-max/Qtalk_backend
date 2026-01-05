@@ -16,41 +16,11 @@ import { PaginatedResponseDto } from 'src/common/dto/paginated-response.dto';
 import { UserListItemDto } from './dto/user-list-item.dto';
 import { FindOneUserQueryDto } from './dto/find-one-user.query.dto';
 import { FullUserDto } from './dto/full-User.dto';
-import { AccountStatus, Prisma } from '@prisma/client';
+import { AccountStatus, AuthProvider, Prisma } from '@prisma/client';
 
 @Injectable()
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
-
-  // async create(dto: CreateUserDto): Promise<PublicUserDto> {
-  //   const hashedPassword = await bcrypt.hash(dto.password, 10);
-
-  //   try {
-  //     return await this.prisma.user.create({
-  //       data: {
-  //         login: dto.login,
-  //         email: dto.email,
-  //         password: hashedPassword,
-  //         accountStatus: AccountStatus.ACTIVE,
-  //         updatedAt: new Date(),
-  //       },
-  //       select: {
-  //         id: true,
-  //         login: true,
-  //         email: true,
-  //         createdAt: true,
-  //         accountStatus: true,
-  //       },
-  //     });
-  //   } catch (e) {
-  //     if (e instanceof Prisma.PrismaClientKnownRequestError) {
-  //       if (e.code === 'P2002') {
-  //         throw new ConflictException('User already exists');
-  //       }
-  //     }
-  //     throw e;
-  //   }
-  // }
 
   async create(dto: CreateUserDto): Promise<PublicUserDto> {
     const hashedPassword = await bcrypt.hash(dto.password, 10);
@@ -58,11 +28,12 @@ export class UsersService {
     try {
       const user = await this.prisma.user.create({
         data: {
-          status: AccountStatus.ACTIVE,
+          accountStatus: AccountStatus.ACTIVE,
           authMethods: {
             create: {
               provider: AuthProvider.LOCAL,
-              providerId: dto.email, // або dto.login, якщо так вирішиш
+              login: dto.login,
+              providerId: dto.email,
               email: dto.email,
               passwordHash: hashedPassword,
             },
@@ -70,14 +41,26 @@ export class UsersService {
         },
         select: {
           id: true,
-          status: true,
+          accountStatus: true,
           createdAt: true,
+          authMethods: {
+            select: {
+              email: true,
+              login: true,
+            },
+            where: {
+              provider: AuthProvider.LOCAL,
+            },
+            take: 1,
+          },
         },
       });
 
       return {
         id: user.id,
-        accountStatus: user.status,
+        email: user.authMethods[0]?.email ?? undefined,
+        login: user.authMethods[0]?.login ?? undefined,
+        accountStatus: user.accountStatus,
         createdAt: user.createdAt,
       };
     } catch (e) {
@@ -96,7 +79,7 @@ export class UsersService {
     const limit = query.limit ?? 10;
     const skip = (page - 1) * limit;
 
-    const [items, total] = await this.prisma.$transaction([
+    const [users, total] = await this.prisma.$transaction([
       this.prisma.user.findMany({
         skip,
         take: limit,
@@ -104,14 +87,31 @@ export class UsersService {
           createdAt: 'desc',
         },
         select: {
-          id: true,
-          login: true,
-          email: true,
           createdAt: true,
+          authMethods: {
+            where: {
+              provider: AuthProvider.LOCAL,
+            },
+            take: 1,
+            select: {
+              email: true,
+              login: true,
+            },
+          },
         },
       }),
       this.prisma.user.count(),
     ]);
+
+    const items: UserListItemDto[] = users.map((user) => {
+      const localAuth = user.authMethods[0];
+
+      return {
+        login: localAuth?.login ?? undefined,
+        email: localAuth?.email ?? undefined,
+        createdAt: user.createdAt,
+      };
+    });
 
     return {
       items,
@@ -130,28 +130,61 @@ export class UsersService {
       throw new BadRequestException('Provide at least one search parameter: id, login or email');
     }
 
-    const or: Prisma.UserWhereInput[] = [];
-
-    if (id) or.push({ id });
-    if (login) or.push({ login });
-    if (email) or.push({ email });
-
     const user = await this.prisma.user.findFirst({
-      where: { OR: or },
+      where: {
+        OR: [
+          id ? { id } : undefined,
+          login
+            ? {
+                authMethods: {
+                  some: {
+                    provider: AuthProvider.LOCAL,
+                    login,
+                  },
+                },
+              }
+            : undefined,
+          email
+            ? {
+                authMethods: {
+                  some: {
+                    provider: AuthProvider.LOCAL,
+                    email,
+                  },
+                },
+              }
+            : undefined,
+        ].filter(Boolean) as Prisma.UserWhereInput[],
+      },
       select: {
         id: true,
-        email: true,
-        login: true,
-        firstName: true,
-        secondName: true,
-        description: true,
-        avatar: true,
-        profileTheme: true,
-        age: true,
         accountStatus: true,
-        gender: true,
         createdAt: true,
-        interests: {
+
+        authMethods: {
+          where: {
+            provider: AuthProvider.LOCAL,
+          },
+          take: 1,
+          select: {
+            email: true,
+            login: true,
+          },
+        },
+
+        data: {
+          select: {
+            firstName: true,
+            lastName: true,
+            description: true,
+            avatar: true,
+            profileTheme: true,
+            age: true,
+            gender: true,
+          },
+        },
+
+        userInterests: {
           select: {
             interest: {
               select: {
@@ -168,100 +201,195 @@ export class UsersService {
     if (!user) {
       throw new NotFoundException('User not found');
     }
-    console.log(user);
+
+    const localAuth = user.authMethods[0];
 
     return {
-      ...user,
-      interests: user.interests.map((ui) => ui.interest),
+      id: user.id,
+      login: localAuth?.login ?? undefined,
+      email: localAuth?.email ?? undefined,
+      accountStatus: user.accountStatus,
+      createdAt: user.createdAt,
+
+      firstName: user.data?.firstName ?? undefined,
+      lastName: user.data?.lastName ?? undefined,
+      description: user.data?.description ?? undefined,
+      avatar: user.data?.avatar ?? undefined,
+      profileTheme: user.data?.profileTheme ?? undefined,
+      age: user.data?.age ?? undefined,
+      gender: user.data?.gender ?? undefined,
+
+      interests: user.userInterests.map((ui) => ui.interest),
     };
   }
 
   // update
-  async update(id: number, dto: UpdateUserDto): Promise<FullUserDto> {
-    if (Object.keys(dto).length === 0) {
-      throw new BadRequestException('No fields provided for update');
-    }
-
-    const data: Prisma.UserUpdateInput = {
-      email: dto.email,
-      login: dto.login,
-      firstName: dto.firstName,
-      secondName: dto.secondName,
-      description: dto.description,
-      avatar: dto.avatar,
-      profileTheme: dto.profileTheme,
-      age: dto.age,
-      accountStatus: dto.accountStatus,
-      gender: dto.gender,
-      updatedAt: new Date(),
-    };
-
-    if (dto.password) {
-      data.password = await bcrypt.hash(dto.password, 10);
-    }
-
-    try {
-      await this.prisma.user.update({
+  async update(id: string, dto: UpdateUserDto): Promise<FullUserDto> {
+    return this.prisma.$transaction(async (tx) => {
+      // 1️⃣ Перевіряємо, що user існує
+      const user = await tx.user.findUnique({
         where: { id },
-        data,
+        select: {
+          id: true,
+        },
       });
-    } catch (e) {
-      if (e instanceof Prisma.PrismaClientKnownRequestError) {
-        if (e.code === 'P2025') {
-          throw new NotFoundException('User not found');
-        }
-        if (e.code === 'P2002') {
-          throw new ConflictException('Email or login already exists');
+
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      // 2️⃣ Оновлюємо auth (login / email) якщо передані
+      if (dto.login || dto.email) {
+        await tx.authMethod.upsert({
+          where: {
+            provider_providerId: {
+              provider: AuthProvider.LOCAL,
+              providerId: dto.email ?? dto.login!,
+            },
+          },
+          update: {
+            login: dto.login,
+            email: dto.email,
+          },
+          create: {
+            provider: AuthProvider.LOCAL,
+            providerId: dto.email ?? dto.login!,
+            login: dto.login,
+            email: dto.email,
+            userId: id,
+          },
+        });
+      }
+
+      // 3️⃣ Оновлюємо / створюємо UserData
+      if (
+        dto.firstName !== undefined ||
+        dto.lastName !== undefined ||
+        dto.description !== undefined ||
+        dto.avatar !== undefined ||
+        dto.profileTheme !== undefined ||
+        dto.age !== undefined ||
+        dto.gender !== undefined
+      ) {
+        await tx.userData.upsert({
+          where: { userId: id },
+          update: {
+            firstName: dto.firstName,
+            lastName: dto.lastName,
+            description: dto.description,
+            avatar: dto.avatar,
+            profileTheme: dto.profileTheme,
+            age: dto.age,
+            gender: dto.gender,
+          },
+          create: {
+            userId: id,
+            firstName: dto.firstName,
+            lastName: dto.lastName,
+            description: dto.description,
+            avatar: dto.avatar,
+            profileTheme: dto.profileTheme,
+            age: dto.age,
+            gender: dto.gender,
+          },
+        });
+      }
+
+      // 4️⃣ Оновлюємо interests (повна заміна)
+      if (dto.interestIds) {
+        await tx.userInterest.deleteMany({
+          where: { userId: id },
+        });
+
+        if (dto.interestIds.length > 0) {
+          await tx.userInterest.createMany({
+            data: dto.interestIds.map((interestId) => ({
+              userId: id,
+              interestId,
+            })),
+          });
         }
       }
-      throw e;
-    }
 
-    // 🔽 ПОВЕРТАЄМО ПОВНОГО ЮЗЕРА З ІНТЕРЕСАМИ
-    const user = await this.prisma.user.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        email: true,
-        login: true,
-        firstName: true,
-        secondName: true,
-        description: true,
-        avatar: true,
-        profileTheme: true,
-        age: true,
-        accountStatus: true,
-        gender: true,
-        createdAt: true,
-        interests: {
-          select: {
-            interest: {
-              select: {
-                id: true,
-                name: true,
-                category: true,
+      // 5️⃣ Повертаємо актуальний user
+      const updatedUser = await tx.user.findUnique({
+        where: { id },
+        select: {
+          id: true,
+          accountStatus: true,
+          createdAt: true,
+
+          authMethods: {
+            where: {
+              provider: AuthProvider.LOCAL,
+            },
+            take: 1,
+            select: {
+              email: true,
+              login: true,
+            },
+          },
+
+          data: {
+            select: {
+              firstName: true,
+              lastName: true,
+              description: true,
+              avatar: true,
+              profileTheme: true,
+              age: true,
+              gender: true,
+            },
+          },
+
+          userInterests: {
+            select: {
+              interest: {
+                select: {
+                  id: true,
+                  name: true,
+                  category: true,
+                },
               },
             },
           },
         },
-      },
+      });
+
+      if (!updatedUser) {
+        throw new NotFoundException('User not found after update');
+      }
+
+      const localAuth = updatedUser.authMethods[0];
+
+      return {
+        id: updatedUser.id,
+        email: localAuth?.email ?? undefined,
+        login: localAuth?.login ?? undefined,
+        accountStatus: updatedUser.accountStatus,
+        createdAt: updatedUser.createdAt,
+
+        firstName: updatedUser.data?.firstName ?? undefined,
+        lastName: updatedUser.data?.lastName ?? undefined,
+        description: updatedUser.data?.description ?? undefined,
+        avatar: updatedUser.data?.avatar ?? undefined,
+        profileTheme: updatedUser.data?.profileTheme ?? undefined,
+        age: updatedUser.data?.age ?? undefined,
+        gender: updatedUser.data?.gender ?? undefined,
+
+        interests: updatedUser.userInterests.map((ui) => ui.interest),
+      };
     });
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
-    return {
-      ...user,
-      interests: user.interests.map((ui) => ui.interest),
-    };
   }
 
   // delete
-  async delete(id: number): Promise<void> {
+  async delete(id: string): Promise<void> {
     try {
-      await this.prisma.user.delete({
+      await this.prisma.user.update({
         where: { id },
+        data: {
+          accountStatus: AccountStatus.DELETED,
+        },
       });
     } catch (e) {
       if (e instanceof Prisma.PrismaClientKnownRequestError) {
@@ -274,12 +402,18 @@ export class UsersService {
   }
 
   // set interest
-  async setUserInterests(userId: number, interestIds: number[]) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
+  async setUserInterests(userId: string, interestIds: string[]): Promise<{ success: true }> {
+    const userExists = await this.prisma.user.findFirst({
+      where: {
+        id: userId,
+        accountStatus: {
+          not: AccountStatus.DELETED,
+        },
+      },
+      select: { id: true },
     });
 
-    if (!user) {
+    if (!userExists) {
       throw new NotFoundException('User not found');
     }
 
@@ -287,11 +421,16 @@ export class UsersService {
       await this.prisma.userInterest.deleteMany({
         where: { userId },
       });
+
       return { success: true };
     }
 
     const validCount = await this.prisma.interest.count({
-      where: { id: { in: interestIds } },
+      where: {
+        id: {
+          in: interestIds,
+        },
+      },
     });
 
     if (validCount !== interestIds.length) {
