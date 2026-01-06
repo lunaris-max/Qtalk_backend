@@ -1,16 +1,19 @@
+// login.dto.ts
 import { ApiProperty } from '@nestjs/swagger';
+import { IsString, MinLength } from 'class-validator';
 
 export class LoginDto {
   @ApiProperty({
-    example: 'user_login',
-    description: 'User login or username',
+    example: 'user@example.com or john_doe',
+    description: 'Login or email',
   })
-  login: string;
+  @IsString()
+  identifier: string;
 
   @ApiProperty({
-    example: 'P@ssw0rd!',
-    description: 'User password',
-    minLength: 6,
+    example: 'StrongPassword123!',
   })
+  @IsString()
+  @MinLength(6)
   password: string;
 }

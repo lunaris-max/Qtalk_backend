@@ -75,25 +75,30 @@ export class AuthService {
   }
 
   // LOCAL
-  async validateLocal(login: string, password: string) {
-    const auth = await this.prisma.authMethod.findFirst({
+  async validateLocalUser(identifier: string, password: string) {
+    const isEmail = identifier.includes('@');
+
+    const authMethod = await this.prisma.authMethod.findFirst({
       where: {
         provider: AuthProvider.LOCAL,
-        OR: [{ login }, { email: login }],
+        ...(isEmail ? { email: identifier.toLowerCase() } : { login: identifier }),
       },
-      include: { user: true },
+      include: {
+        user: true,
+      },
     });
 
-    console.log(auth);
-    console.log('auth here --------------------------------');
+    if (!authMethod || !authMethod.passwordHash) {
+      return null;
+    }
 
-    if (!auth || !auth.passwordHash) return null;
+    const passwordValid = await bcrypt.compare(password, authMethod.passwordHash);
 
-    const match = await bcrypt.compare(password, auth.passwordHash);
-    console.log(match);
-    if (!match) return null;
+    if (!passwordValid) {
+      return null;
+    }
 
-    return auth.user;
+    return authMethod.user;
   }
 
   // SOCIAL (Google / GitHub / Facebook)
