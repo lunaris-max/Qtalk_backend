@@ -37,8 +37,10 @@ export class MailService {
       case MailType.RESET_PASSWORD:
         return this.sendResetPassword(payload.email);
 
-      default:
-        throw new BadRequestException(`Unknown mail type: ${type}`);
+      default: {
+        const exhaustiveCheck: never = type;
+        throw new BadRequestException(`Unknown mail type: ${String(exhaustiveCheck)}`);
+      }
     }
   }
 

@@ -5,7 +5,6 @@ import {
   IsEnum,
   MinLength,
   MaxLength,
-  IsNumber,
   Matches,
   IsInt,
   Min,

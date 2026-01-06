@@ -4,7 +4,7 @@ import { AccessTokenService } from './access-token/access-token.service';
 import { RefreshTokenService } from './refresh-token/refresh-token.service';
 import { CreateUserDto } from 'src/users/dto/create-user.dto';
 import { PrismaService } from 'prisma/prisma.service';
-import { AccountStatus, AuthProvider, User } from '@prisma/client';
+import { AccountStatus, AuthProvider } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import type { Response, Request } from 'express';
 @Injectable()
@@ -108,7 +108,7 @@ export class AuthService {
     email?: string;
     login?: string;
   }) {
-    let auth = await this.prisma.authMethod.findUnique({
+    const auth = await this.prisma.authMethod.findUnique({
       where: {
         provider_providerId: {
           provider: profile.provider,
@@ -133,7 +133,7 @@ export class AuthService {
     return auth.user;
   }
 
-  issueTokens(payload: { id: string; identifier: string }, res: Response) {
+  async issueTokens(payload: { id: string; identifier: string }, res: Response) {
     if (!payload.identifier) {
       payload.identifier = 'true';
     }
@@ -148,7 +148,7 @@ export class AuthService {
 
     const refreshToken = this.refreshTokenService.generate();
 
-    this.refreshTokenService.save(payload.id, refreshToken);
+    await this.refreshTokenService.save(payload.id, refreshToken);
 
     res.cookie('access_token', accessToken, {
       httpOnly: true,
