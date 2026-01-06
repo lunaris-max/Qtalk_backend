@@ -10,7 +10,7 @@ export class FacebookStrategy extends PassportStrategy(Strategy, 'facebook') {
     super({
       clientID: config.get('FACEBOOK_APP_ID'),
       clientSecret: config.get('FACEBOOK_APP_SECRET'),
-      callbackURL: '/auth/facebook/callback',
+      callbackURL: 'https://teamchallenge-chat-backend.onrender.com/v1/auth/facebook/callback',
       profileFields: ['id', 'emails', 'name'],
     });
   }

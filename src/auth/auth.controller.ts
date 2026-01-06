@@ -159,7 +159,7 @@ export class AuthController {
   // =========================
   // GITHUB AUTH
   // =========================
-  @Get('github')
+  @Get(`${routesV1.auth.github}`)
   @UseGuards(AuthGuard('github'))
   @ApiOperation({
     summary: 'GitHub OAuth redirect',
@@ -168,7 +168,7 @@ export class AuthController {
   // @ApiExcludeEndpoint()
   github() {}
 
-  @Get('github/callback')
+  @Get(`${routesV1.auth.github}/callback`)
   @UseGuards(AuthGuard('github'))
   @ApiOperation({
     summary: 'GitHub OAuth callback',
@@ -193,7 +193,7 @@ export class AuthController {
   // =========================
   // FACEBOOK AUTH
   // =========================
-  @Get('facebook')
+  @Get(`${routesV1.auth.facebook}`)
   @UseGuards(AuthGuard('facebook'))
   @ApiOperation({
     summary: 'Facebook OAuth redirect',
@@ -202,7 +202,7 @@ export class AuthController {
   // @ApiExcludeEndpoint()
   facebook() {}
 
-  @Get('facebook/callback')
+  @Get(`${routesV1.auth.facebook}/callback`)
   @UseGuards(AuthGuard('facebook'))
   @ApiOperation({
     summary: 'Facebook OAuth callback',

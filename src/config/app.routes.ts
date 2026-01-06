@@ -19,5 +19,7 @@ export const routesV1 = {
     findOne: `/${usersAuth}/:id`,
     update: `/${usersAuth}/:id`,
     google: `/${usersAuth}/google`,
+    github: `/${usersAuth}/github`,
+    facebook: `/${usersAuth}/facebook`,
   },
 };
