@@ -7,6 +7,7 @@ import { PrismaModule } from 'prisma/prisma.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AuthModule } from './auth/auth.module';
 import { InterestModule } from './interest/interest.module';
+import { MailModule } from './mail/mail.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { InterestModule } from './interest/interest.module';
       }),
     }),
     InterestModule,
+    MailModule,
   ],
   controllers: [AppController],
   providers: [AppService],

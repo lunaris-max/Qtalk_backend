@@ -8,13 +8,16 @@ datasource db {
 }
 
 model User {
-  id            String        @id @default(uuid())
-  accountStatus AccountStatus @default(ACTIVE)
-  createdAt     DateTime      @default(now())
+  id                 String        @id @default(uuid())
+  accountStatus      AccountStatus @default(ACTIVE)
+  createdAt          DateTime      @default(now())
+  emailVerifiedAt    DateTime?
+  identityVerifiedAt DateTime?
 
-  authMethods   AuthMethod[]
-  data          UserData?
-  userInterests UserInterest[]
+  authMethods        AuthMethod[]
+  data               UserData?
+  userInterests      UserInterest[]
+  emailVerifications EmailVerification[]
 }
 
 model AuthMethod {
@@ -36,7 +39,7 @@ model UserData {
   id           String   @id @default(uuid())
   userId       String   @unique
   firstName    String?  @db.VarChar(20)
-  lastName   String?  @db.VarChar(20)
+  lastName     String?  @db.VarChar(20)
   description  String?
   avatar       String?
   profileTheme String?
@@ -65,6 +68,21 @@ model UserInterest {
   interest Interest @relation(fields: [interestId], references: [id], onDelete: Cascade)
 
   @@id([userId, interestId])
+}
+
+model EmailVerification {
+  id        String   @id @default(uuid())
+  userId    String
+  email     String
+  codeHash  String
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  usedAt    DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([email])
 }
 
 enum AccountStatus {

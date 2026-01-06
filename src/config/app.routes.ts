@@ -1,6 +1,7 @@
 // Root
 const usersRoot = 'users';
-const usersAuth = 'auth';
+const authRoot = 'auth';
+const mailRoot = 'mail';
 
 // Api Versions
 const v1 = 'v1';
@@ -14,12 +15,16 @@ export const routesV1 = {
     update: `/${usersRoot}/:id`,
   },
   auth: {
-    root: usersAuth,
-    delete: `/${usersAuth}/:id`,
-    findOne: `/${usersAuth}/:id`,
-    update: `/${usersAuth}/:id`,
-    google: `/${usersAuth}/google`,
-    github: `/${usersAuth}/github`,
-    facebook: `/${usersAuth}/facebook`,
+    root: authRoot,
+    delete: `/${authRoot}/:id`,
+    findOne: `/${authRoot}/:id`,
+    update: `/${authRoot}/:id`,
+    google: `/${authRoot}/google`,
+    github: `/${authRoot}/github`,
+    facebook: `/${authRoot}/facebook`,
+  },
+  mail: {
+    confirm: `/${mailRoot}/confirm`,
+    sendConfirm: `/${mailRoot}/sendConfirm`,
   },
 };
