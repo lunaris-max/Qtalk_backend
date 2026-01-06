@@ -7,6 +7,9 @@ import {
   MaxLength,
   IsNumber,
   Matches,
+  IsInt,
+  Min,
+  Max,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -77,10 +80,14 @@ export class CreateUserDto {
 
   @ApiPropertyOptional({
     example: 25,
-    minimum: 0,
+    minimum: 12,
+    maximum: 120,
+    description: 'User age (minimum 12)',
   })
   @IsOptional()
-  @IsNumber()
+  @IsInt()
+  @Min(12, { message: 'Age must be at least 12 years old' })
+  @Max(120, { message: 'Age must be realistic' })
   age?: number;
 
   @ApiPropertyOptional({
