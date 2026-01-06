@@ -1,6 +1,0 @@
-export class PublicUser {
-  id: number;
-  login: string;
-  email: string;
-  createdAt: Date;
-}

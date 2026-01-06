@@ -43,24 +43,16 @@ async function bootstrap() {
   const env = configService.get('NODE_ENV', 'development');
 
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup(
-    configService.get('SWAGGER_PATH') || 'api',
-    app,
-    document,
-  );
+  SwaggerModule.setup(configService.get('SWAGGER_PATH') || 'api', app, document);
 
   await app.listen(configService.get('PORT') ?? 3000);
 
   console.log(`Environment: ${env}`);
   console.log('MONGO_DATABASE_URL =', configService.get('MONGO_DATABASE_URL'));
+  console.log('POSTGRES_DATABASE_URL =', configService.get('POSTGRES_DATABASE_URL'));
   console.log(
-    'POSTGRES_DATABASE_URL =',
-    configService.get('POSTGRES_DATABASE_URL'),
-  );
-  console.log(
-    'API on http://localhost:' +
-      configService.get('PORT') +
-      configService.get('SWAGGER_PATH'),
+    'API on http://localhost:' + configService.get('PORT') + configService.get('SWAGGER_PATH'),
   );
 }
-bootstrap();
+
+void bootstrap();

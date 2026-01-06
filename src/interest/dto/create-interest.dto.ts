@@ -1,6 +1,6 @@
-import { ApiProperty } from '@nestjs/swagger'
-import { IsEnum, IsNotEmpty, IsString } from 'class-validator'
-import { InterestCategory } from '@prisma/client'
+import { ApiProperty } from '@nestjs/swagger';
+import { IsEnum, IsNotEmpty, IsString } from 'class-validator';
+import { InterestCategory } from '@prisma/client';
 
 export class CreateInterestDto {
   @ApiProperty({
@@ -8,7 +8,7 @@ export class CreateInterestDto {
   })
   @IsString()
   @IsNotEmpty()
-  name: string
+  name: string;
 
   @ApiProperty({
     enum: InterestCategory,
@@ -16,5 +16,5 @@ export class CreateInterestDto {
     default: InterestCategory.OTHER,
   })
   @IsEnum(InterestCategory)
-  category?: InterestCategory
+  category?: InterestCategory;
 }

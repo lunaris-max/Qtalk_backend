@@ -5,11 +5,7 @@ import { RefreshToken, RefreshTokenSchema } from './refresh-token.schema';
 import { RefreshTokenService } from './refresh-token.service';
 
 @Module({
-  imports: [
-    MongooseModule.forFeature([
-      { name: RefreshToken.name, schema: RefreshTokenSchema },
-    ]),
-  ],
+  imports: [MongooseModule.forFeature([{ name: RefreshToken.name, schema: RefreshTokenSchema }])],
   providers: [RefreshTokenService],
   exports: [RefreshTokenService],
 })

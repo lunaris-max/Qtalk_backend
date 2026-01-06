@@ -12,6 +12,7 @@ import { AuthService } from './auth.service';
 import { routesV1 } from 'src/config/app.routes';
 import { CreateUserDto } from 'src/users/dto/create-user.dto';
 import type { Response, Request } from 'express';
+import { AuthProvider } from '@prisma/client';
 import {
   ApiBody,
   ApiCookieAuth,
@@ -20,7 +21,6 @@ import {
   ApiOperation,
   ApiTags,
   ApiUnauthorizedResponse,
-  ApiExcludeEndpoint,
 } from '@nestjs/swagger';
 import { PublicUserDto } from 'src/users/dto/public-user.dto';
 import { AuthGuard } from '@nestjs/passport';
@@ -115,11 +115,10 @@ export class AuthController {
   @ApiUnauthorizedResponse({
     description: 'Invalid login or password',
   })
-  async login(@Req() req, @Res({ passthrough: true }) res: Response) {
-    console.log('🔥 LOGIN CONTROLLER HIT');
-    console.log(req.user);
-    this.authService.issueTokens(req.user, res);
-    return req.user;
+  async login(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    const user = req.user as { id: string; identifier: string };
+    await this.authService.issueTokens(user, res);
+    return user;
   }
 
   // =========================
@@ -142,13 +141,14 @@ export class AuthController {
       'Handles Google OAuth response, logs in or creates user, sets cookies and redirects to frontend.',
   })
   // @ApiExcludeEndpoint()
-  async googleCallback(@Req() req, @Res() res: Response) {
-    const user = await this.authService.loginSocial(req.user);
+  async googleCallback(@Req() req: Request, @Res() res: Response) {
+    const profile = req.user as { provider: AuthProvider; providerId: string; email?: string };
+    const user = await this.authService.loginSocial(profile);
 
-    this.authService.issueTokens(
+    await this.authService.issueTokens(
       {
         id: user.id,
-        identifier: req.user.email,
+        identifier: profile.email ?? user.id,
       },
       res,
     );
@@ -176,13 +176,19 @@ export class AuthController {
       'Handles GitHub OAuth response, logs in or creates user, sets cookies and redirects.',
   })
   // @ApiExcludeEndpoint()
-  async githubCallback(@Req() req, @Res() res: Response) {
-    const user = await this.authService.loginSocial(req.user);
+  async githubCallback(@Req() req: Request, @Res() res: Response) {
+    const profile = req.user as {
+      provider: AuthProvider;
+      providerId: string;
+      email?: string;
+      login?: string;
+    };
+    const user = await this.authService.loginSocial(profile);
 
-    this.authService.issueTokens(
+    await this.authService.issueTokens(
       {
         id: user.id,
-        identifier: req.user.email,
+        identifier: profile.email ?? profile.login ?? user.id,
       },
       res,
     );
@@ -210,13 +216,14 @@ export class AuthController {
       'Handles Facebook OAuth response, logs in or creates user, sets cookies and redirects.',
   })
   // @ApiExcludeEndpoint()
-  async facebookCallback(@Req() req, @Res() res: Response) {
-    const user = await this.authService.loginSocial(req.user);
+  async facebookCallback(@Req() req: Request, @Res() res: Response) {
+    const profile = req.user as { provider: AuthProvider; providerId: string; email?: string };
+    const user = await this.authService.loginSocial(profile);
 
-    this.authService.issueTokens(
+    await this.authService.issueTokens(
       {
         id: user.id,
-        identifier: req.user.email,
+        identifier: profile.email ?? user.id,
       },
       res,
     );

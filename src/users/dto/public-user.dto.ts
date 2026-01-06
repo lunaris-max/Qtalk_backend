@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { AccountStatus, Gender } from '@prisma/client';
+import { AccountStatus } from '@prisma/client';
 
 export class PublicUserDto {
   @ApiProperty({ example: 1 })

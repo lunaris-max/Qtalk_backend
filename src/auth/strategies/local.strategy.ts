@@ -7,7 +7,7 @@ import { Strategy } from 'passport-local';
 export class LocalStrategy extends PassportStrategy(Strategy, 'local') {
   constructor(private readonly authService: AuthService) {
     super({
-      usernameField: 'identifier', // 🔥 важливо
+      usernameField: 'identifier',
       passwordField: 'password',
     });
   }

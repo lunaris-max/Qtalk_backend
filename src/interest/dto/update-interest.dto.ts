@@ -1,10 +1,10 @@
-import { ApiPropertyOptional } from '@nestjs/swagger'
-import { InterestCategory } from '@prisma/client'
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { InterestCategory } from '@prisma/client';
 
 export class UpdateInterestDto {
   @ApiPropertyOptional({ example: 'Basketball' })
-  name?: string
+  name?: string;
 
   @ApiPropertyOptional({ enum: InterestCategory })
-  category?: InterestCategory
+  category?: InterestCategory;
 }
