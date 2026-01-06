@@ -18,6 +18,7 @@ model User {
   data               UserData?
   userInterests      UserInterest[]
   emailVerifications EmailVerification[]
+  passwordResets PasswordReset[]
 }
 
 model AuthMethod {
@@ -83,6 +84,22 @@ model EmailVerification {
 
   @@index([userId])
   @@index([email])
+}
+
+model PasswordReset {
+  id        String   @id @default(uuid())
+  userId    String
+  email     String
+  codeHash  String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([email])
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 enum AccountStatus {

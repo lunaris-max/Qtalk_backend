@@ -1,10 +1,11 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 import * as bcrypt from 'bcrypt';
 import { MailType } from './mail.types';
 import { verifyEmailTemplate } from './templates/verify-email.template';
 import { PrismaService } from 'prisma/prisma.service';
+import { resetPasswordTemplate } from './templates/reset-password.template';
 
 @Injectable()
 export class MailService {
@@ -33,8 +34,11 @@ export class MailService {
       case MailType.VERIFY_EMAIL:
         return this.sendVerifyEmail(payload.email);
 
+      case MailType.RESET_PASSWORD:
+        return this.sendResetPassword(payload.email);
+
       default:
-        throw new BadRequestException('Unknown mail type');
+        throw new BadRequestException(`Unknown mail type: ${type}`);
     }
   }
 
@@ -133,6 +137,101 @@ export class MailService {
     ]);
 
     return { verified: true };
+  }
+
+  // =========================
+  // RESET PASSWORD
+  // =========================
+  private async sendResetPassword(email: string) {
+    const authMethod = await this.prisma.authMethod.findFirst({
+      where: {
+        email,
+        provider: 'LOCAL',
+      },
+    });
+
+    if (!authMethod) {
+      throw new ForbiddenException('Password reset is available only for LOCAL accounts');
+    }
+
+    await this.prisma.passwordReset.updateMany({
+      where: {
+        userId: authMethod.userId,
+        email,
+        usedAt: null,
+      },
+      data: { usedAt: new Date() },
+    });
+
+    const code = this.generateCode();
+    const codeHash = await bcrypt.hash(code, 10);
+
+    await this.prisma.passwordReset.create({
+      data: {
+        userId: authMethod.userId,
+        email,
+        codeHash,
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+      },
+    });
+
+    const template = resetPasswordTemplate(code);
+
+    await this.transporter.sendMail({
+      from: this.config.get<string>('MAIL_FROM'),
+      to: email,
+      subject: template.subject,
+      html: template.html,
+    });
+
+    return { success: true };
+  }
+
+  async confirmResetPassword(payload: { email: string; code: string; newPassword: string }) {
+    const authMethod = await this.prisma.authMethod.findFirst({
+      where: {
+        email: payload.email,
+        provider: 'LOCAL',
+      },
+    });
+
+    if (!authMethod) {
+      throw new ForbiddenException('Password reset is available only for LOCAL accounts');
+    }
+
+    const record = await this.prisma.passwordReset.findFirst({
+      where: {
+        userId: authMethod.userId,
+        email: payload.email,
+        usedAt: null,
+        expiresAt: { gt: new Date() },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!record) {
+      throw new BadRequestException('Invalid or expired reset code');
+    }
+
+    const isValid = await bcrypt.compare(payload.code, record.codeHash);
+    if (!isValid) {
+      throw new BadRequestException('Invalid reset code');
+    }
+
+    const newPasswordHash = await bcrypt.hash(payload.newPassword, 10);
+
+    await this.prisma.$transaction([
+      this.prisma.passwordReset.update({
+        where: { id: record.id },
+        data: { usedAt: new Date() },
+      }),
+      this.prisma.authMethod.update({
+        where: { id: authMethod.id },
+        data: { passwordHash: newPasswordHash },
+      }),
+    ]);
+
+    return { passwordReset: true };
   }
 
   // =========================

@@ -26,5 +26,7 @@ export const routesV1 = {
   mail: {
     confirm: `/${mailRoot}/confirm`,
     sendConfirm: `/${mailRoot}/sendConfirm`,
+    resetPasswordSend: 'reset-password/send',
+    resetPasswordConfirm: 'reset-password/confirm',
   },
 };
