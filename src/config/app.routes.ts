@@ -18,5 +18,6 @@ export const routesV1 = {
     delete: `/${usersAuth}/:id`,
     findOne: `/${usersAuth}/:id`,
     update: `/${usersAuth}/:id`,
+    google: `/${usersAuth}/google`,
   },
 };

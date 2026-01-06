@@ -125,7 +125,7 @@ export class AuthController {
   // =========================
   // GOOGLE AUTH
   // =========================
-  @Get(`${routesV1.auth.root}/google`)
+  @Get(`${routesV1.auth.google}`)
   @UseGuards(AuthGuard('google'))
   @ApiOperation({
     summary: 'Google OAuth redirect',
@@ -134,7 +134,7 @@ export class AuthController {
   // @ApiExcludeEndpoint()
   google() {}
 
-  @Get('google/callback')
+  @Get(`${routesV1.auth.google}/callback`)
   @UseGuards(AuthGuard('google'))
   @ApiOperation({
     summary: 'Google OAuth callback',
