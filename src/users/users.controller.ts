@@ -11,6 +11,7 @@ import {
   Query,
   ParseIntPipe,
   Put,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -111,8 +112,15 @@ export class UsersController {
 
   @Put(':id/interests')
   @ApiOperation({ summary: 'Set user interests (replace)' })
-  @ApiParam({ name: 'id', example: 1 })
-  setUserInterests(@Param('id', ParseIntPipe) userId: string, @Body() dto: SetUserInterestsDto) {
+  @ApiParam({
+    name: 'id',
+    example: 'a3f1e1a0-3b0c-4c9f-8f5a-3c6b1f7d9e21',
+    description: 'User UUID',
+  })
+  setUserInterests(
+    @Param('id', new ParseUUIDPipe()) userId: string,
+    @Body() dto: SetUserInterestsDto,
+  ) {
     return this.usersService.setUserInterests(userId, dto.interestIds);
   }
 }
