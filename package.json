@@ -6,7 +6,8 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "build": "nest build",
+    "build:dev": "nest build",
+    "build:prod": "tsc -p tsconfig.build.json",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
@@ -25,7 +26,8 @@
     "m1": "cross-env NODE_ENV=production dotenv -e .env.prod -- prisma migrate reset",
     "db:tables:prod": "cross-env NODE_ENV=production dotenv -e .env.prod -- prisma db execute --stdin \"SELECT tablename FROM pg_tables WHERE schemaname='public';\"",
     "prepare:dev": "husky install",
-    "prepare": "echo 'Skipping husky in production'"
+    "prepare": "echo 'Skipping husky in production'",
+    "postinstall": "npx prisma generate"
   },
   "lint-staged": {
     "*.{ts,js}": [
@@ -37,7 +39,6 @@
     ]
   },
   "dependencies": {
-    "@nestjs/cli": "^11.0.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.0.1",
@@ -75,6 +76,7 @@
   "devDependencies": {
     "@commitlint/config-conventional": "^20.3.0",
     "@eslint/js": "^9.18.0",
+    "@nestjs/cli": "^11.0.15",
     "@nestjs/schematics": "^11.0.0",
     "@nestjs/testing": "^11.0.1",
     "@types/bcrypt": "^6.0.0",
