@@ -7,7 +7,7 @@
   "license": "UNLICENSED",
   "scripts": {
     "build:dev": "nest build",
-    "build:prod": "npm ci && npm run build:ts",
+    "build:prod": "npm ci --omit=dev && npm run build:ts",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
@@ -27,7 +27,7 @@
     "db:tables:prod": "cross-env NODE_ENV=production dotenv -e .env.prod -- prisma db execute --stdin \"SELECT tablename FROM pg_tables WHERE schemaname='public';\"",
     "prepare:dev": "husky install",
     "prepare": "echo 'Skipping husky in production'",
-    "postinstall": "npx prisma generate",
+    "postinstall": "if [ \"$CI\" = \"true\" ]; then npx prisma generate; else echo \"Skipping prisma generate on local install\"; fi",
     "build:ts": "tsc -p tsconfig.build.json && npx tsc-alias -p tsconfig.build.json"
   },
   "lint-staged": {
@@ -107,6 +107,7 @@
     "supertest": "^7.0.0",
     "ts-jest": "^29.2.5",
     "ts-node": "^10.9.2",
+    "tsc-alias": "^1.8.16",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.20.0"
