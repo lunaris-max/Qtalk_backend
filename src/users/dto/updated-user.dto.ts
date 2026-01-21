@@ -1,9 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { AccountStatus, AuthProvider, Gender } from '@prisma/client';
-import { InterestDto } from '@src/interest/dto/interest.dto';
 import { IsNumber, IsOptional, IsUUID } from 'class-validator';
 
-export class FullUserDto {
+export class UpdatedUserDto {
   @ApiProperty({
     example: '550e8400-e29b-41d4-a716-446655440000',
     description: 'User ID (UUID)',
@@ -99,10 +98,4 @@ export class FullUserDto {
     description: 'User creation date',
   })
   createdAt: Date;
-
-  @ApiProperty({
-    type: [InterestDto],
-    description: 'User interests',
-  })
-  interests: InterestDto[];
 }

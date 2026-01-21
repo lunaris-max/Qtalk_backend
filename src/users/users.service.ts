@@ -8,21 +8,21 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '@db/prisma.service';
-// import { Prisma } from '../../generated/prisma/client';
-import { PublicUserDto } from './dto/public-user.dto';
-// import { AccountStatus } from '@src/generated/enums';
 import { PaginationQueryDto } from '@src/common/dto/pagination-query.dto';
 import { PaginatedResponseDto } from '@src/common/dto/paginated-response.dto';
 import { UserListItemDto } from './dto/user-list-item.dto';
 import { FindOneUserQueryDto } from './dto/find-one-user.query.dto';
 import { FullUserDto } from './dto/full-User.dto';
 import { AccountStatus, AuthProvider, Prisma } from '@prisma/client';
+import { CreatedUserDto } from '@src/users/dto/created-user.dto';
+import { pickDefined } from '@src/common/utils/pick-defined';
+import { UpdatedUserDto } from '@src/users/dto/updated-user.dto';
 
 @Injectable()
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(dto: CreateUserDto): Promise<PublicUserDto> {
+  async create(dto: CreateUserDto): Promise<CreatedUserDto> {
     const hashedPassword = await bcrypt.hash(dto.password, 10);
 
     try {
@@ -38,15 +38,40 @@ export class UsersService {
               passwordHash: hashedPassword,
             },
           },
+          data: {
+            create: {
+              firstName: dto.firstName,
+              lastName: dto.lastName,
+              description: dto.description,
+              avatar: dto.avatar,
+              profileTheme: dto.profileTheme,
+              age: dto.age,
+              gender: dto.gender,
+              updatedAt: new Date(),
+            },
+          },
         },
         select: {
           id: true,
           accountStatus: true,
           createdAt: true,
+          data: {
+            select: {
+              firstName: true,
+              lastName: true,
+              description: true,
+              avatar: true,
+              profileTheme: true,
+              age: true,
+              gender: true,
+              updatedAt: true,
+            },
+          },
           authMethods: {
             select: {
               email: true,
               login: true,
+              provider: true,
             },
             where: {
               provider: AuthProvider.LOCAL,
@@ -60,7 +85,7 @@ export class UsersService {
         id: user.id,
         email: user.authMethods[0]?.email ?? undefined,
         login: user.authMethods[0]?.login ?? undefined,
-        accountStatus: user.accountStatus,
+        provider: user.authMethods[0]?.provider,
         createdAt: user.createdAt,
       };
     } catch (e) {
@@ -86,7 +111,13 @@ export class UsersService {
         orderBy: {
           createdAt: 'desc',
         },
+        where: {
+          accountStatus: {
+            not: AccountStatus.DELETED,
+          },
+        },
         select: {
+          id: true,
           createdAt: true,
           authMethods: {
             where: {
@@ -96,6 +127,7 @@ export class UsersService {
             select: {
               email: true,
               login: true,
+              provider: true,
             },
           },
         },
@@ -107,8 +139,10 @@ export class UsersService {
       const localAuth = user.authMethods[0];
 
       return {
+        id: user.id,
         login: localAuth?.login ?? undefined,
         email: localAuth?.email ?? undefined,
+        provider: localAuth.provider,
         createdAt: user.createdAt,
       };
     });
@@ -159,16 +193,17 @@ export class UsersService {
       select: {
         id: true,
         accountStatus: true,
+        emailVerifiedAt: true,
+        identityVerifiedAt: true,
         createdAt: true,
 
         authMethods: {
-          where: {
-            provider: AuthProvider.LOCAL,
-          },
           take: 1,
           select: {
             email: true,
             login: true,
+            provider: true,
+            providerId: true,
           },
         },
 
@@ -219,92 +254,72 @@ export class UsersService {
       age: user.data?.age ?? undefined,
       gender: user.data?.gender ?? undefined,
 
+      provider: localAuth.provider,
+      providerId: localAuth.providerId,
+      emailVerifiedAt: user.emailVerifiedAt ?? undefined,
+      identityVerifiedAt: user.identityVerifiedAt ?? undefined,
+
       interests: user.userInterests.map((ui) => ui.interest),
     };
   }
 
   // update
-  async update(id: string, dto: UpdateUserDto): Promise<FullUserDto> {
+  async update(id: string, dto: UpdateUserDto): Promise<UpdatedUserDto> {
     return this.prisma.$transaction(async (tx) => {
       const user = await tx.user.findUnique({
         where: { id },
-        select: {
-          id: true,
-        },
+        select: { id: true },
       });
 
       if (!user) {
         throw new NotFoundException('User not found');
       }
 
-      if (dto.login || dto.email) {
+      //  AuthMethod ( LOCAL or userId + provider)
+      if (dto.login || dto.email || dto.password) {
+        const authData = pickDefined({
+          login: dto.login,
+          email: dto.email,
+          passwordHash: dto.password ? await bcrypt.hash(dto.password, 10) : undefined,
+        });
+
         await tx.authMethod.upsert({
           where: {
-            provider_providerId: {
+            userId_provider: {
+              userId: id,
               provider: AuthProvider.LOCAL,
-              providerId: dto.email ?? dto.login!,
             },
           },
-          update: {
-            login: dto.login,
-            email: dto.email,
-          },
+          update: authData,
           create: {
-            provider: AuthProvider.LOCAL,
-            providerId: dto.email ?? dto.login!,
-            login: dto.login,
-            email: dto.email,
             userId: id,
+            provider: AuthProvider.LOCAL,
+            providerId: dto.email ?? dto.login ?? id,
+            ...authData,
           },
         });
       }
 
-      if (
-        dto.firstName !== undefined ||
-        dto.lastName !== undefined ||
-        dto.description !== undefined ||
-        dto.avatar !== undefined ||
-        dto.profileTheme !== undefined ||
-        dto.age !== undefined ||
-        dto.gender !== undefined
-      ) {
+      // UserData
+      const profileData = pickDefined({
+        firstName: dto.firstName,
+        lastName: dto.lastName,
+        description: dto.description,
+        avatar: dto.avatar,
+        profileTheme: dto.profileTheme,
+        age: dto.age,
+        gender: dto.gender,
+      });
+
+      if (Object.keys(profileData).length > 0) {
         await tx.userData.upsert({
           where: { userId: id },
-          update: {
-            firstName: dto.firstName,
-            lastName: dto.lastName,
-            description: dto.description,
-            avatar: dto.avatar,
-            profileTheme: dto.profileTheme,
-            age: dto.age,
-            gender: dto.gender,
-          },
+          update: profileData,
           create: {
             userId: id,
-            firstName: dto.firstName,
-            lastName: dto.lastName,
-            description: dto.description,
-            avatar: dto.avatar,
-            profileTheme: dto.profileTheme,
-            age: dto.age,
-            gender: dto.gender,
+            ...profileData,
           },
         });
-      }
-
-      if (dto.interestIds) {
-        await tx.userInterest.deleteMany({
-          where: { userId: id },
-        });
-
-        if (dto.interestIds.length > 0) {
-          await tx.userInterest.createMany({
-            data: dto.interestIds.map((interestId) => ({
-              userId: id,
-              interestId,
-            })),
-          });
-        }
       }
 
       const updatedUser = await tx.user.findUnique({
@@ -315,9 +330,7 @@ export class UsersService {
           createdAt: true,
 
           authMethods: {
-            where: {
-              provider: AuthProvider.LOCAL,
-            },
+            where: { provider: AuthProvider.LOCAL },
             take: 1,
             select: {
               email: true,
@@ -336,18 +349,6 @@ export class UsersService {
               gender: true,
             },
           },
-
-          userInterests: {
-            select: {
-              interest: {
-                select: {
-                  id: true,
-                  name: true,
-                  category: true,
-                },
-              },
-            },
-          },
         },
       });
 
@@ -359,8 +360,10 @@ export class UsersService {
 
       return {
         id: updatedUser.id,
+
         email: localAuth?.email ?? undefined,
         login: localAuth?.login ?? undefined,
+
         accountStatus: updatedUser.accountStatus,
         createdAt: updatedUser.createdAt,
 
@@ -371,78 +374,67 @@ export class UsersService {
         profileTheme: updatedUser.data?.profileTheme ?? undefined,
         age: updatedUser.data?.age ?? undefined,
         gender: updatedUser.data?.gender ?? undefined,
-
-        interests: updatedUser.userInterests.map((ui) => ui.interest),
       };
     });
   }
 
   // delete
   async delete(id: string): Promise<void> {
-    try {
-      await this.prisma.user.update({
-        where: { id },
-        data: {
-          accountStatus: AccountStatus.DELETED,
-        },
-      });
-    } catch (e) {
-      if (e instanceof Prisma.PrismaClientKnownRequestError) {
-        if (e.code === 'P2025') {
-          throw new NotFoundException('User not found');
-        }
-      }
-      throw e;
+    const result = await this.prisma.user.updateMany({
+      where: {
+        id,
+        accountStatus: { not: AccountStatus.DELETED },
+      },
+      data: {
+        accountStatus: AccountStatus.DELETED,
+      },
+    });
+
+    if (result.count === 0) {
+      throw new NotFoundException('User not found');
     }
   }
 
   // set interest
   async setUserInterests(userId: string, interestIds: string[]): Promise<{ success: true }> {
-    const userExists = await this.prisma.user.findFirst({
-      where: {
-        id: userId,
-        accountStatus: {
-          not: AccountStatus.DELETED,
-        },
-      },
-      select: { id: true },
+    // check user
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { accountStatus: true },
     });
 
-    if (!userExists) {
+    if (!user || user.accountStatus === AccountStatus.DELETED) {
       throw new NotFoundException('User not found');
     }
 
-    if (interestIds.length === 0) {
-      await this.prisma.userInterest.deleteMany({
+    const uniqueInterestIds = [...new Set(interestIds)];
+
+    await this.prisma.$transaction(async (tx) => {
+      if (uniqueInterestIds.length > 0) {
+        const existing = await tx.interest.findMany({
+          where: { id: { in: uniqueInterestIds } },
+          select: { id: true },
+        });
+
+        if (existing.length !== uniqueInterestIds.length) {
+          throw new NotFoundException('One or more interests not found');
+        }
+      }
+
+      await tx.userInterest.deleteMany({
         where: { userId },
       });
 
-      return { success: true };
-    }
-
-    const validCount = await this.prisma.interest.count({
-      where: {
-        id: {
-          in: interestIds,
-        },
-      },
+      if (uniqueInterestIds.length > 0) {
+        await tx.userInterest.createMany({
+          data: uniqueInterestIds.map((interestId) => ({
+            userId,
+            interestId,
+          })),
+          skipDuplicates: true,
+        });
+      }
     });
-
-    if (validCount !== interestIds.length) {
-      throw new NotFoundException('One or more interests not found');
-    }
-
-    await this.prisma.$transaction([
-      this.prisma.userInterest.deleteMany({
-        where: { userId },
-      }),
-      this.prisma.userInterest.createMany({
-        data: interestIds.map((interestId) => ({
-          userId,
-          interestId,
-        })),
-      }),
-    ]);
 
     return { success: true };
   }

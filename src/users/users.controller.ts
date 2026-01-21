@@ -26,14 +26,15 @@ import {
   ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
-import { PublicUserDto } from './dto/public-user.dto';
 import { PaginationQueryDto } from '@src/common/dto/pagination-query.dto';
 import { PaginatedUsersDto } from './dto/paginated-users.dto';
 import { FindOneUserQueryDto } from './dto/find-one-user.query.dto';
 import { FullUserDto } from './dto/full-User.dto';
 import { SetUserInterestsDto } from './dto/set-user-interests.dto';
+import { CreatedUserDto } from '@src/users/dto/created-user.dto';
+import { UpdatedUserDto } from '@src/users/dto/updated-user.dto';
 
-@ApiTags('Users')
+@ApiTags(routesV1.user.root)
 @Controller(routesV1.version)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
@@ -46,7 +47,7 @@ export class UsersController {
   })
   @ApiCreatedResponse({
     description: 'User successfully created',
-    type: PublicUserDto,
+    type: CreatedUserDto,
   })
   @ApiConflictResponse({
     description: 'User already exists (duplicate login or email)',
@@ -54,8 +55,8 @@ export class UsersController {
   @ApiBadRequestResponse({
     description: 'Validation error',
   })
-  @Post(routesV1.user.root)
-  create(@Body() createUserDto: CreateUserDto) {
+  @Post(routesV1.user.create)
+  create(@Body() createUserDto: CreateUserDto): Promise<CreatedUserDto> {
     return this.usersService.create(createUserDto);
   }
 
@@ -64,7 +65,7 @@ export class UsersController {
     summary: 'Find list of all users',
     description: 'Return list of users with pagination',
   })
-  @Get(routesV1.user.root)
+  @Get(routesV1.user.findAll)
   @ApiOkResponse({ type: PaginatedUsersDto })
   async findAll(@Query() query: PaginationQueryDto): Promise<PaginatedUsersDto> {
     return this.usersService.findAll(query);
@@ -91,7 +92,7 @@ export class UsersController {
   async update(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() dto: UpdateUserDto,
-  ): Promise<FullUserDto> {
+  ): Promise<UpdatedUserDto> {
     return this.usersService.update(id, dto);
   }
 
@@ -109,7 +110,7 @@ export class UsersController {
     await this.usersService.delete(id);
   }
 
-  @Put(':id/interests')
+  @Put(routesV1.user.interest)
   @ApiOperation({ summary: 'Set user interests (replace)' })
   @ApiParam({
     name: 'id',
