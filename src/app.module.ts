@@ -4,19 +4,23 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
-import { UsersModule } from './users/users.module';
-import { AuthModule } from './auth/auth.module';
-import { InterestModule } from './interest/interest.module';
-import { MailModule } from './mail/mail.module';
+import { UsersModule } from './modules/users/users.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { InterestsModule } from './modules/interests/interests.module';
+import { MailModule } from './modules/mail/mail.module';
 import { PrismaModule } from '@db/prisma.module';
-import { PinoLoggerModule } from './logger/pino.module';
+import { PinoLoggerModule } from './infra/logger/pino.module';
 import { dbConfig } from './config';
-import { HealthModule } from './health/health.module';
+import { HealthModule } from './modules/health/health.module';
+import { ChangelogModule } from '@src/common/changelog/changelog.module';
 
 @Module({
   imports: [
     // LOGGER
     PinoLoggerModule,
+
+    // CHANGELOG
+    ChangelogModule,
 
     // DATABASES
     PrismaModule,
@@ -26,7 +30,7 @@ import { HealthModule } from './health/health.module';
     // FEATURES
     UsersModule,
     AuthModule,
-    InterestModule,
+    InterestsModule,
     MailModule,
     HealthModule,
   ],

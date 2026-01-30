@@ -1,36 +1,33 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
 import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
 
-import { initSentry } from './sentry/sentry.config';
+import { initSentry } from './infra/sentry/sentry.config';
 import { RequestIdInterceptor } from './common/interceptors/request-id.interceptor';
-import { SentryExceptionFilter } from './sentry/sentry.filter';
 import { Logger } from 'nestjs-pino';
-import { createLogStream } from './logger/log-stream';
+import { createLogStream } from './infra/logger/log-stream';
 
 import './config';
 import { appConfig, corsConfig, loggerConfig } from './config';
+import { buildSwaggerConfig } from '@src/infra/swagger/swagger.config';
+import { GlobalExceptionFilter } from '@src/common/filters/global-exception.filter';
+import { ChangelogService } from '@src/common/changelog/changelog.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     bufferLogs: true,
   });
 
-  // const env = config.getOrThrow<string>('NODE_ENV');
-  // const port = config.getOrThrow<number>('PORT');
-  // const swaggerPath = config.getOrThrow<string>('SWAGGER_PATH');
-  // const corsOrigins = config.getOrThrow<string>('CORS_ORIGINS').split(',');
-  // const logDir = config.getOrThrow<string>('LOG_DIR');
-
-  // // SENTRY
+  // SENTRY
   initSentry();
 
   // GLOBALS
   app.useGlobalInterceptors(new RequestIdInterceptor());
-  app.useGlobalFilters(new SentryExceptionFilter());
+  app.useGlobalFilters(new GlobalExceptionFilter());
+  // app.useGlobalFilters(new SentryExceptionFilter());
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,
@@ -58,7 +55,7 @@ async function bootstrap() {
 
   const errorLogStream = createLogStream(loggerConfig.dir, loggerConfig.morgan.errorLog);
 
-  if (appConfig.nodeEnv) {
+  if (appConfig.nodeEnv !== 'production') {
     // access log
     app.use(
       morgan('dev', {
@@ -84,15 +81,12 @@ async function bootstrap() {
   }
 
   // SWAGGER
+  const changelogService = app.get(ChangelogService);
 
-  const swaggerConfig = new DocumentBuilder()
-    .setTitle('TeamChallengeChatApi')
-    .setDescription('API for TeamChallengeChat')
-    .setVersion('1.0')
-    .addBearerAuth()
-    .build();
+  const swaggerConfig = await buildSwaggerConfig(changelogService);
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
+
   SwaggerModule.setup(appConfig.swaggerPath, app, document);
 
   await app.listen(appConfig.port);
