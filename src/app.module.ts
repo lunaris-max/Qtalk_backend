@@ -13,6 +13,7 @@ import { PinoLoggerModule } from './infra/logger/pino.module';
 import { dbConfig } from './config';
 import { HealthModule } from './modules/health/health.module';
 import { ChangelogModule } from '@src/common/changelog/changelog.module';
+import { RoomsModule } from './modules/rooms/rooms.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { ChangelogModule } from '@src/common/changelog/changelog.module';
     AuthModule,
     InterestsModule,
     MailModule,
+    RoomsModule,
     HealthModule,
   ],
   controllers: [AppController],

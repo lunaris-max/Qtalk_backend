@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog,
 and this project adheres to Semantic Versioning.
 
+## [0.0.12] - 2026-02-04
+
+### Added
+
+- Room models and relations (Room, RoomMember, RoomInterest) with enums (RoomType, RoomStatus, RoomMemberRole, RoomLanguage)
+- POST `/v1/rooms` endpoint for room creation
+- Room creation logic: owner assignment, auto member add, optional interests, languages enum, age range 12-100
+- Rooms swagger docs moved to `rooms/swagger-docs`
+
 ## [0.0.11] - 2026-01-30
 
 ### Changed

@@ -17,6 +17,8 @@ model User {
   authMethods        AuthMethod[]
   data               UserData?
   userInterests      UserInterest[]
+  ownedRooms         Room[]        @relation("RoomOwner")
+  roomMembers        RoomMember[]
   emailVerifications EmailVerification[]
   passwordResets PasswordReset[]
 }
@@ -60,6 +62,7 @@ model Interest {
   updatedAt DateTime         @updatedAt
 
   users UserInterest[]
+  roomInterests RoomInterest[]
 }
 
 model UserInterest {
@@ -70,6 +73,46 @@ model UserInterest {
   interest Interest @relation(fields: [interestId], references: [id], onDelete: Cascade)
 
   @@id([userId, interestId])
+}
+
+model Room {
+  id        String         @id @default(uuid())
+  name      String         @db.VarChar(100)
+  type      RoomType
+  status    RoomStatus     @default(ACTIVE)
+  minAge    Int            @default(12)
+  maxAge    Int            @default(100)
+  languages RoomLanguage[]
+  photoUrl  String?
+  ownerId   String
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  owner     User           @relation("RoomOwner", fields: [ownerId], references: [id])
+  members   RoomMember[]
+  interests RoomInterest[]
+}
+
+model RoomMember {
+  roomId   String
+  userId   String
+  role     RoomMemberRole @default(MEMBER)
+  joinedAt DateTime       @default(now())
+
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([roomId, userId])
+}
+
+model RoomInterest {
+  roomId     String
+  interestId String
+
+  room     Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  interest Interest @relation(fields: [interestId], references: [id], onDelete: Cascade)
+
+  @@id([roomId, interestId])
 }
 
 model EmailVerification {
@@ -133,4 +176,23 @@ enum InterestCategory {
   DEEP_TALKS
   SPORTS_FITNESS
   LIFESTYLE
+}
+
+enum RoomType {
+  PUBLIC
+  PRIVATE
+}
+
+enum RoomStatus {
+  ACTIVE
+}
+
+enum RoomMemberRole {
+  OWNER
+  MEMBER
+}
+
+enum RoomLanguage {
+  EN
+  UK
 }
