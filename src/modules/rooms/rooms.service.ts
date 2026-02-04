@@ -7,16 +7,16 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { AccountStatus, Prisma, RoomLanguage, RoomMemberRole, RoomStatus } from '@prisma/client';
-import { PrismaService } from '@db/prisma.service';
+import { AccountStatus, Prisma, RoomLanguage } from '@prisma/client';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { CreatedRoomDto } from './dto/created-room.dto';
+import { RoomsRepository } from './repository/rooms.repository';
 
 @Injectable()
 export class RoomsService {
   private readonly logger = new Logger(RoomsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly roomsRepository: RoomsRepository) {}
 
   async create(userId: string | undefined, dto: CreateRoomDto): Promise<CreatedRoomDto> {
     if (!userId) {
@@ -26,10 +26,7 @@ export class RoomsService {
 
     this.logger.log(`Room creation started: userId=${userId}, name="${dto.name}"`);
 
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { accountStatus: true },
-    });
+    const user = await this.roomsRepository.findUserAccountStatus(userId);
 
     if (!user) {
       throw new NotFoundException('User not found');
@@ -50,9 +47,7 @@ export class RoomsService {
     const interestIds = [...new Set(dto.interestIds ?? [])];
 
     if (interestIds.length > 0) {
-      const count = await this.prisma.interest.count({
-        where: { id: { in: interestIds } },
-      });
+      const count = await this.roomsRepository.countInterestsByIds(interestIds);
 
       if (count !== interestIds.length) {
         throw new NotFoundException('One or more interests not found');
@@ -60,7 +55,7 @@ export class RoomsService {
     }
 
     try {
-      const created = await this.createRoomWithRelations({
+      const created = await this.roomsRepository.createRoomWithRelations({
         userId,
         dto,
         minAge,
@@ -71,7 +66,18 @@ export class RoomsService {
 
       this.logger.log(`Room created: roomId=${created.id}, ownerId=${created.ownerId}`);
 
-      return created;
+      return {
+        id: created.id,
+        name: created.name,
+        type: created.type,
+        status: created.status,
+        minAge: created.minAge,
+        maxAge: created.maxAge,
+        languages: created.languages,
+        ownerId: created.ownerId,
+        interests: created.interests.map((ri) => ri.interest),
+        createdAt: created.createdAt,
+      };
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         this.logger.warn(
@@ -96,74 +102,4 @@ export class RoomsService {
     }
   }
 
-  private async createRoomWithRelations(params: {
-    userId: string;
-    dto: CreateRoomDto;
-    minAge: number;
-    maxAge: number;
-    languages: RoomLanguage[];
-    interestIds: string[];
-  }): Promise<CreatedRoomDto> {
-    const { userId, dto, minAge, maxAge, languages, interestIds } = params;
-
-    const room = await this.prisma.room.create({
-      data: {
-        name: dto.name.trim(),
-        type: dto.type,
-        status: RoomStatus.ACTIVE,
-        minAge,
-        maxAge,
-        languages,
-        ownerId: userId,
-        members: {
-          create: {
-            userId,
-            role: RoomMemberRole.OWNER,
-          },
-        },
-        interests: interestIds.length
-          ? {
-              create: interestIds.map((interestId) => ({
-                interestId,
-              })),
-            }
-          : undefined,
-      },
-      select: {
-        id: true,
-        name: true,
-        type: true,
-        status: true,
-        minAge: true,
-        maxAge: true,
-        languages: true,
-        ownerId: true,
-        createdAt: true,
-        interests: {
-          select: {
-            interest: {
-              select: {
-                id: true,
-                name: true,
-                category: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    return {
-      id: room.id,
-      name: room.name,
-      type: room.type,
-      status: room.status,
-      minAge: room.minAge,
-      maxAge: room.maxAge,
-      languages: room.languages,
-      ownerId: room.ownerId,
-      interests: room.interests.map((ri) => ri.interest),
-      createdAt: room.createdAt,
-    };
-  }
 }
