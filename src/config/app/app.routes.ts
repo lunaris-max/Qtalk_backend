@@ -3,6 +3,7 @@ const usersRoot = 'users';
 const authRoot = 'auth';
 const mailRoot = 'mail';
 const interestsRoot = 'interests';
+const roomsRoot = 'rooms';
 
 // Api Versions
 const v1 = 'v1';
@@ -39,6 +40,10 @@ export const routesV1 = {
     delete: `/${interestsRoot}/:id`,
     findOne: `/${interestsRoot}/:id`,
     update: `/${interestsRoot}/:id`,
+  },
+  rooms: {
+    root: roomsRoot,
+    create: `/${roomsRoot}`,
   },
   mail: {
     confirm: `/${mailRoot}/confirm`,
