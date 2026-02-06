@@ -1,6 +1,6 @@
 import { PrismaService } from '@db/prisma.service';
 import { Injectable } from '@nestjs/common';
-import { Prisma, RoomLanguage, RoomMemberRole, RoomStatus } from '@prisma/client';
+import { RoomLanguage, RoomMemberRole, RoomStatus, RoomType, InterestCategory } from '@prisma/client';
 import { CreateRoomDto } from '../dto/create-room.dto';
 
 @Injectable()
@@ -27,10 +27,20 @@ export class RoomsRepository {
     maxAge: number;
     languages: RoomLanguage[];
     interestIds: string[];
+    photoUrl?: string | null;
+    media?: {
+      originalName?: string | null;
+      resourceType: string;
+      format: string;
+      bytes: number;
+      publicId: string;
+      url: string;
+      secureUrl: string;
+    }[];
   }) {
-    const { userId, dto, minAge, maxAge, languages, interestIds } = params;
+    const { userId, dto, minAge, maxAge, languages, interestIds, photoUrl, media } = params;
 
-    return this.prisma.room.create({
+    const result = await this.prisma.room.create({
       data: {
         name: dto.name.trim(),
         type: dto.type,
@@ -39,6 +49,7 @@ export class RoomsRepository {
         maxAge,
         languages,
         ownerId: userId,
+        photoUrl: photoUrl ?? undefined,
         members: {
           create: {
             userId,
@@ -50,6 +61,11 @@ export class RoomsRepository {
               create: interestIds.map((interestId) => ({
                 interestId,
               })),
+            }
+          : undefined,
+        media: media?.length
+          ? {
+              create: media,
             }
           : undefined,
       },
@@ -74,7 +90,50 @@ export class RoomsRepository {
             },
           },
         },
+        media: {
+          select: {
+            id: true,
+            originalName: true,
+            resourceType: true,
+            format: true,
+            bytes: true,
+            publicId: true,
+            url: true,
+            secureUrl: true,
+            createdAt: true,
+          },
+        },
       },
     });
+
+    return result as {
+      id: string;
+      name: string;
+      type: RoomType;
+      status: RoomStatus;
+      minAge: number;
+      maxAge: number;
+      languages: RoomLanguage[];
+      ownerId: string;
+      createdAt: Date;
+      interests: {
+        interest: {
+          id: string;
+          name: string;
+          category: InterestCategory;
+        };
+      }[];
+      media: {
+        id: string;
+        originalName: string | null;
+        resourceType: string;
+        format: string;
+        bytes: number;
+        publicId: string;
+        url: string;
+        secureUrl: string;
+        createdAt: Date;
+      }[];
+    };
   }
 }

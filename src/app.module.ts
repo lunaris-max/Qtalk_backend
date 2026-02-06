@@ -14,6 +14,7 @@ import { dbConfig } from './config';
 import { HealthModule } from './modules/health/health.module';
 import { ChangelogModule } from '@src/common/changelog/changelog.module';
 import { RoomsModule } from './modules/rooms/rooms.module';
+import { MediaModule } from './modules/media/media.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { RoomsModule } from './modules/rooms/rooms.module';
     InterestsModule,
     MailModule,
     RoomsModule,
+    MediaModule,
     HealthModule,
   ],
   controllers: [AppController],

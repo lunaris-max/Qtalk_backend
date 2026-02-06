@@ -4,6 +4,7 @@ const authRoot = 'auth';
 const mailRoot = 'mail';
 const interestsRoot = 'interests';
 const roomsRoot = 'rooms';
+const mediaRoot = 'media';
 
 // Api Versions
 const v1 = 'v1';
@@ -44,6 +45,10 @@ export const routesV1 = {
   rooms: {
     root: roomsRoot,
     create: `/${roomsRoot}`,
+  },
+  media: {
+    root: mediaRoot,
+    upload: `/${mediaRoot}/upload`,
   },
   mail: {
     confirm: `/${mailRoot}/confirm`,
