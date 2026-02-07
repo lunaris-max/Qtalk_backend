@@ -11,7 +11,7 @@ import {
   ApiPayloadTooLargeResponse,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { CreatedRoomDto } from '../dto/created-room.dto';
+import { CreatedRoomDto } from '../dto/responses';
 import { AUTH_COOKIES } from '@src/modules/auth/constants/auth-cookies.constants';
 import { RoomLanguage, RoomType } from '@prisma/client';
 

@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { AccountStatus, Prisma, RoomLanguage } from '@prisma/client';
 import { CreateRoomDto } from './dto/create-room.dto';
-import { CreatedRoomDto } from './dto/created-room.dto';
+import { CreatedRoomDto, RoomDetailsDto } from './dto/responses';
 import { RoomsRepository } from './repository/rooms.repository';
 import { CloudinaryService } from '@src/infra/cloudinary/cloudinary.service';
 import { MediaCreateInput, UploadResult } from './types';
@@ -58,7 +58,6 @@ export class RoomsService {
         minAge: created.minAge,
         maxAge: created.maxAge,
         languages: created.languages,
-        ownerId: created.ownerId,
         interests: created.interests.map((ri) => ri.interest),
         media: created.media,
         createdAt: created.createdAt,
@@ -132,7 +131,6 @@ export class RoomsService {
 
   private async uploadRoomPhoto(file: Express.Multer.File | undefined): Promise<UploadResult | null> {
     if (!file) return null;
-
     return this.cloudinaryService.uploadBuffer(file.buffer, {
       folder: 'rooms/photos',
       resource_type: 'image',
@@ -158,4 +156,56 @@ export class RoomsService {
     ];
   }
 
+  async findOne(
+    userId: string | undefined,
+    roomId: string,
+  ): Promise<RoomDetailsDto> {
+    if (!userId) {
+      this.logger.warn('Room fetch attempt without authentication');
+      throw new UnauthorizedException('User is not authenticated');
+    }
+
+    const user = await this.roomsRepository.findUserAccountStatus(userId);
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (user.accountStatus !== AccountStatus.ACTIVE) {
+      throw new ForbiddenException('User is not allowed to access rooms');
+    }
+
+    const room = await this.roomsRepository.findRoomWithMembers(roomId);
+
+    if (!room) {
+      throw new NotFoundException('Room not found');
+    }
+
+    const isMember = room.members.some((member) => member.userId === userId);
+
+    if (!isMember) {
+      throw new ForbiddenException('User is not a room member');
+    }
+
+    return {
+      id: room.id,
+      name: room.name,
+      type: room.type,
+      status: room.status,
+      minAge: room.minAge,
+      maxAge: room.maxAge,
+      languages: room.languages,
+      interests: room.interests.map((ri) => ri.interest),
+      media: room.media,
+      createdAt: room.createdAt,
+      members: room.members.map((member) => ({
+        firstName: member.user.data?.firstName ?? undefined,
+        lastName: member.user.data?.lastName ?? undefined,
+        avatar: member.user.data?.avatar ?? undefined,
+        age: member.user.data?.age ?? undefined,
+        gender: member.user.data?.gender ?? undefined,
+        role: member.role,
+      })),
+    };
+  }
 }

@@ -14,13 +14,21 @@ and this project adheres to Semantic Versioning.
 - Room creation logic: owner assignment, auto member add, optional interests, languages enum, age range 12-100
 - Rooms swagger docs moved to `rooms/swagger-docs`
 
-## [0.0.13] - 2026-02-06
+## [0.0.13] - 2026-02-07
 
 ### Added
 
 - Room creation now supports uploading a single room photo (image only, max 10MB) in the same request
 - Room photo metadata is stored in a new `Media` table linked to the room
 - `photoUrl` field is populated with the uploaded image URL for quick preview usage
+- GET `/v1/rooms/:id` endpoint with member-only access checks
+- Room details response includes members with minimal user fields and role
+- Swagger docs for room retrieval
+
+### Changed
+
+- Room response DTOs moved to `rooms/dto/responses` with barrel export
+- Room responses no longer include `ownerId`
 
 ## [0.0.11] - 2026-01-30
 
