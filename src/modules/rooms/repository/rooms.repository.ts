@@ -136,4 +136,64 @@ export class RoomsRepository {
       }[];
     };
   }
+
+  async findRoomWithMembers(roomId: string) {
+    return this.prisma.room.findUnique({
+      where: { id: roomId },
+      select: {
+        id: true,
+        name: true,
+        type: true,
+        status: true,
+        minAge: true,
+        maxAge: true,
+        languages: true,
+        ownerId: true,
+        createdAt: true,
+        interests: {
+          select: {
+            interest: {
+              select: {
+                id: true,
+                name: true,
+                category: true,
+              },
+            },
+          },
+        },
+        media: {
+          select: {
+            id: true,
+            originalName: true,
+            resourceType: true,
+            format: true,
+            bytes: true,
+            publicId: true,
+            url: true,
+            secureUrl: true,
+            createdAt: true,
+          },
+        },
+        members: {
+          select: {
+            userId: true,
+            role: true,
+            user: {
+              select: {
+                data: {
+                  select: {
+                    firstName: true,
+                    lastName: true,
+                    avatar: true,
+                    age: true,
+                    gender: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+  }
 }

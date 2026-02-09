@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { RoomLanguage, RoomStatus, RoomType } from '@prisma/client';
 import { InterestDto } from '@src/modules/interests/dto/interests.dto';
-import { MediaDto } from './room-media.dto';
+import { MediaDto } from '../room-media.dto';
 
 export class CreatedRoomDto {
   @ApiProperty({
@@ -43,12 +43,6 @@ export class CreatedRoomDto {
     example: [RoomLanguage.UK, RoomLanguage.EN],
   })
   languages: RoomLanguage[];
-
-  @ApiProperty({
-    example: '550e8400-e29b-41d4-a716-446655440000',
-    description: 'Owner user ID',
-  })
-  ownerId: string;
 
   @ApiProperty({
     type: [InterestDto],

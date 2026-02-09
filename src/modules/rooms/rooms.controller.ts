@@ -1,4 +1,16 @@
-import { BadRequestException, Body, Controller, Post, Req, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Req,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import type { Request, Express } from 'express';
@@ -8,8 +20,8 @@ import { memoryStorage } from 'multer';
 import { routesV1 } from '@src/config';
 import { RoomsService } from './rooms.service';
 import { CreateRoomDto } from './dto/create-room.dto';
-import { CreatedRoomDto } from './dto/created-room.dto';
-import { CreateRoomDocs } from './swagger-docs';
+import { CreatedRoomDto, RoomDetailsDto } from './dto/responses';
+import { CreateRoomDocs, GetRoomDocs } from './swagger-docs';
 
 @ApiTags(routesV1.rooms.root)
 @Controller(routesV1.version)
@@ -44,5 +56,16 @@ export class RoomsController {
   {
     const user = req.user as { id?: string } | undefined;
     return this.roomsService.create(user?.id, dto, file);
+  }
+
+  @Get(routesV1.rooms.findOne)
+  @UseGuards(AuthGuard('jwt'))
+  @GetRoomDocs()
+  findOne(
+    @Req() req: Request,
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ): Promise<RoomDetailsDto> {
+    const user = req.user as { id?: string } | undefined;
+    return this.roomsService.findOne(user?.id, id);
   }
 }

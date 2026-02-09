@@ -45,6 +45,7 @@ export const routesV1 = {
   rooms: {
     root: roomsRoot,
     create: `/${roomsRoot}`,
+    findOne: `/${roomsRoot}/:id`,
   },
   media: {
     root: mediaRoot,
