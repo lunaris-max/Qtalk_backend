@@ -91,6 +91,25 @@ model Room {
   owner     User           @relation("RoomOwner", fields: [ownerId], references: [id])
   members   RoomMember[]
   interests RoomInterest[]
+  media     Media[]
+}
+
+model Media {
+  id           String   @id @default(uuid())
+  roomId       String
+  originalName String?
+  resourceType String
+  format       String
+  bytes        Int
+  publicId     String
+  url          String
+  secureUrl    String
+  createdAt    DateTime @default(now())
+
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@index([roomId])
+  @@index([publicId])
 }
 
 model RoomMember {

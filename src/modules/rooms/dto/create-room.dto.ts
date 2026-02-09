@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   ArrayMinSize,
   ArrayUnique,
@@ -17,6 +17,21 @@ import {
 } from 'class-validator';
 import { RoomLanguage, RoomType } from '@prisma/client';
 
+const parseStringArray = (value: unknown): string[] => {
+  if (Array.isArray(value)) return value;
+  if (typeof value !== 'string') return [];
+
+  const trimmed = value.trim();
+  if (!trimmed) return [];
+
+  try {
+    const parsed = JSON.parse(trimmed);
+    return Array.isArray(parsed) ? parsed : [String(parsed)];
+  } catch {
+    return trimmed.split(',').map((item) => item.trim()).filter(Boolean);
+  }
+};
+
 export class CreateRoomDto {
   @ApiProperty({
     example: 'Gaming Night',
@@ -31,7 +46,7 @@ export class CreateRoomDto {
   @ApiProperty({
     enum: RoomType,
     example: RoomType.PUBLIC,
-    description: 'Room type',
+    description: `Room type. Allowed values: ${Object.values(RoomType).join(', ')}`,
   })
   @IsEnum(RoomType)
   type: RoomType;
@@ -66,8 +81,9 @@ export class CreateRoomDto {
     isArray: true,
     enum: RoomLanguage,
     example: [RoomLanguage.UK, RoomLanguage.EN],
-    description: 'Room languages',
+    description: `Room languages. Allowed values: ${Object.values(RoomLanguage).join(', ')}`,
   })
+  @Transform(({ value }) => parseStringArray(value))
   @IsArray()
   @ArrayMinSize(1)
   @ArrayUnique()
@@ -79,6 +95,7 @@ export class CreateRoomDto {
     example: ['550e8400-e29b-41d4-a716-446655440000'],
     description: 'Interest IDs (categories are derived from interests)',
   })
+  @Transform(({ value }) => parseStringArray(value))
   @IsArray()
   @ArrayUnique()
   @IsUUID('4', { each: true })

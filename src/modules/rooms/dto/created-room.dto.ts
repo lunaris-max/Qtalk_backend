@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { RoomLanguage, RoomStatus, RoomType } from '@prisma/client';
 import { InterestDto } from '@src/modules/interests/dto/interests.dto';
+import { MediaDto } from './room-media.dto';
 
 export class CreatedRoomDto {
   @ApiProperty({
@@ -53,6 +54,11 @@ export class CreatedRoomDto {
     type: [InterestDto],
   })
   interests: InterestDto[];
+
+  @ApiProperty({
+    type: [MediaDto],
+  })
+  media: MediaDto[];
 
   @ApiProperty({
     example: '2026-02-04T10:00:00.000Z',

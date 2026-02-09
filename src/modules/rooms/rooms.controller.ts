@@ -1,13 +1,14 @@
-import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { BadRequestException, Body, Controller, Post, Req, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
-import type { Request } from 'express';
+import type { Request, Express } from 'express';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 
 import { routesV1 } from '@src/config';
 import { RoomsService } from './rooms.service';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { CreatedRoomDto } from './dto/created-room.dto';
-import { AUTH_COOKIES } from '@src/modules/auth/constants/auth-cookies.constants';
 import { CreateRoomDocs } from './swagger-docs';
 
 @ApiTags(routesV1.rooms.root)
@@ -17,11 +18,31 @@ export class RoomsController {
 
   @Post(routesV1.rooms.create)
   @UseGuards(AuthGuard('jwt'))
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      limits: {
+        files: 1,
+        fileSize: 10 * 1024 * 1024,
+      },
+      fileFilter: (_req, file, cb) => {
+        const isImage = file.mimetype?.startsWith('image/');
+        if (!isImage) {
+          return cb(new BadRequestException('Only image files are allowed'), false);
+        }
+        return cb(null, true);
+      },
+    }),
+  )
   @CreateRoomDocs()
-  create(@Req() req: Request, @Body() dto: CreateRoomDto)
+  create(
+    @Req() req: Request,
+    @Body() dto: CreateRoomDto,
+    @UploadedFile() file: Express.Multer.File | undefined,
+  )
     : Promise<CreatedRoomDto>
   {
     const user = req.user as { id?: string } | undefined;
-    return this.roomsService.create(user?.id, dto);
+    return this.roomsService.create(user?.id, dto, file);
   }
 }
