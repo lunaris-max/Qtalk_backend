@@ -20,8 +20,6 @@ export class TenantGuard implements CanActivate {
 
     const domain = hostHeader.toString().toLowerCase();
 
-    console.log(domain);
-
     // find tenantDomain
     const tenantDomain = await this.prisma.tenantDomain.findUnique({
       where: { domain },

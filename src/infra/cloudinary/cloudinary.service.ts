@@ -28,6 +28,7 @@ export class CloudinaryService {
         },
         (error, result) => {
           if (error || !result) {
+            // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
             return reject(error ?? new Error('Cloudinary upload failed'));
           }
 

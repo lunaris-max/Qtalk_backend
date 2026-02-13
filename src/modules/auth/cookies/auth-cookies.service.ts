@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { cookiesConfig } from '@src/config';
-import { routesV1 } from '@src/config/app/app.routes';
 import { AUTH_COOKIES } from '@src/modules/auth/constants/auth-cookies.constants';
 import type { Response, Request } from 'express';
 
@@ -22,7 +21,7 @@ export class AuthCookiesService {
       secure: cookiesConfig.secure,
       sameSite: cookiesConfig.sameSite,
       maxAge: cookiesConfig.refreshMaxAge,
-      path: routesV1.auth.refresh,
+      path: '/',
     });
   }
 
