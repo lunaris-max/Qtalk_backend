@@ -30,6 +30,7 @@ import { RegisterUserResponseDto } from '@src/modules/auth/dto/register-user.res
 import { RefreshResponseDto } from '@src/modules/auth/dto/refresh.response.dto';
 import { CreatedUserDto } from '@src/modules/users/dto/created-user.dto';
 import { AUTH_COOKIES } from '@src/modules/auth/constants/auth-cookies.constants';
+import { Public } from '@src/common/decorators/public.decorator';
 
 @ApiTags(routesV1.auth.root)
 @Controller(routesV1.version)
@@ -42,6 +43,7 @@ export class AuthController {
   // =========================
   // REGISTER (LOCAL)
   // =========================
+  @Public()
   @Post(routesV1.auth.root)
   @ApiOperation({
     summary: 'Register user (local)',
@@ -67,6 +69,7 @@ export class AuthController {
   // =========================
   // REFRESH TOKEN
   // =========================
+  @Public()
   @Post(routesV1.auth.refresh)
   @ApiCookieAuth(AUTH_COOKIES.REFRESH_TOKEN)
   @ApiOperation({

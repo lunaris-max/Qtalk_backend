@@ -353,4 +353,19 @@ export class UsersRepository {
         : []),
     ]);
   }
+
+  async findByIdWithPermissions(userId: string, tenantId: string) {
+    return this.prisma.tenantUser.findUnique({
+      where: {
+        userId_tenantId: {
+          userId,
+          tenantId,
+        },
+      },
+      include: {
+        user: true,
+        permissions: true,
+      },
+    });
+  }
 }

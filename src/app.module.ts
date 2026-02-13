@@ -15,6 +15,9 @@ import { HealthModule } from './modules/health/health.module';
 import { ChangelogModule } from '@src/common/changelog/changelog.module';
 import { RoomsModule } from './modules/rooms/rooms.module';
 import { MediaModule } from './modules/media/media.module';
+import { APP_GUARD } from '@nestjs/core';
+import { JwtAuthGuard } from '@src/common/guards/jwt-auth.guard';
+import { PermissionGuard } from '@src/common/guards/permission.guard';
 
 @Module({
   imports: [
@@ -39,6 +42,20 @@ import { MediaModule } from './modules/media/media.module';
     HealthModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
+    // {
+    //   provide: APP_GUARD,
+    //   useClass: TenantGuard,
+    // },
+    {
+      provide: APP_GUARD,
+      useClass: PermissionGuard,
+    },
+  ],
 })
 export class AppModule {}

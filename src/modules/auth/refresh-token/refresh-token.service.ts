@@ -27,6 +27,7 @@ export class RefreshTokenService {
   }
   async validate(token: string): Promise<RefreshToken> {
     const records = await this.model.find();
+    console.log(token);
 
     for (const record of records) {
       const isMatch = await bcrypt.compare(token, record.tokenHash);
