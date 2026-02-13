@@ -18,8 +18,8 @@ export class AuthService {
     private readonly authCookiesService: AuthCookiesService,
   ) {}
 
-  async register(dto: CreateUserDto) {
-    const user = await this.usersService.create(dto);
+  async register(dto: CreateUserDto, tenantId: string) {
+    const user = await this.usersService.create(dto, tenantId);
 
     if (!user.login) {
       throw new UnauthorizedException('User login is missing');

@@ -368,4 +368,23 @@ export class UsersRepository {
       },
     });
   }
+  async getUserPermissions(userId: string, tenantId: string) {
+    const tenantUser = await this.prisma.tenantUser.findUnique({
+      where: {
+        userId_tenantId: {
+          userId,
+          tenantId,
+        },
+      },
+      include: {
+        permissions: true,
+      },
+    });
+
+    if (!tenantUser) {
+      return null;
+    }
+
+    return tenantUser.permissions.map((p) => p.permission);
+  }
 }

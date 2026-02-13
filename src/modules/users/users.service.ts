@@ -13,7 +13,7 @@ import { PaginatedResponseDto } from '@src/common/dto/paginated-response.dto';
 import { UserListItemDto } from './dto/user-list-item.dto';
 import { FindOneUserQueryDto } from './dto/find-one-user.query.dto';
 import { FullUserDto } from './dto/full-user.dto';
-import { AccountStatus, Prisma } from '@prisma/client';
+import { AccountStatus, Permission, Prisma } from '@prisma/client';
 import { CreatedUserDto } from '@src/modules/users/dto/created-user.dto';
 import { pickDefined } from '@src/common/utils/pick-defined';
 import { UpdatedUserDto } from '@src/modules/users/dto/updated-user.dto';
@@ -27,7 +27,7 @@ export class UsersService {
     private readonly usersRepository: UsersRepository,
   ) {}
 
-  async create(dto: CreateUserDto): Promise<CreatedUserDto> {
+  async create(dto: CreateUserDto, tenantId: string): Promise<CreatedUserDto> {
     const passwordHash = await bcrypt.hash(dto.password, 10);
 
     try {
@@ -44,6 +44,29 @@ export class UsersService {
           birthDate: dto.birthDate,
           gender: dto.gender,
         },
+      });
+      const tenantUser = await this.prisma.tenantUser.create({
+        data: {
+          userId: user.id,
+          tenantId,
+          tenantStatus: AccountStatus.ACTIVE,
+        },
+      });
+
+      // based permissions
+      const basePermissions: Permission[] = [
+        Permission.CHAT_READ,
+        Permission.CHAT_WRITE,
+        Permission.USER_READ,
+        Permission.USER_UPDATE,
+      ];
+
+      await this.prisma.tenantUserPermission.createMany({
+        data: basePermissions.map((p) => ({
+          tenantUserId: tenantUser.id,
+          permission: p,
+        })),
+        skipDuplicates: true,
       });
 
       return {

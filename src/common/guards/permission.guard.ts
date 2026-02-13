@@ -1,4 +1,10 @@
-import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import {
   PERMISSIONS_KEY,
@@ -6,12 +12,16 @@ import {
 } from '../decorators/require-permissions.decorator';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 import { Permission } from '@prisma/client';
+import { UsersRepository } from '@src/modules/users/repository/users.repository';
 
 @Injectable()
 export class PermissionGuard implements CanActivate {
-  constructor(private reflector: Reflector) {}
+  constructor(
+    private reflector: Reflector,
+    private UserRepository: UsersRepository,
+  ) {}
 
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),
       context.getClass(),
@@ -25,24 +35,37 @@ export class PermissionGuard implements CanActivate {
       context.getHandler(),
       context.getClass(),
     ]);
-    console.log('config');
-    console.log(config);
 
-    // Default deny
     if (!config) {
       throw new ForbiddenException('No permissions defined');
     }
 
     const request = context.switchToHttp().getRequest();
     const user = request.user;
+    const tenantId = request.tenantId;
 
-    if (!user || !user.permissions) {
-      throw new ForbiddenException('No permissions found');
+    if (!user?.id) {
+      throw new UnauthorizedException();
     }
 
-    const { permissions, selfParam } = config;
+    if (!tenantId) {
+      throw new ForbiddenException('Tenant missing');
+    }
 
-    const userPermissions: Permission[] = user.permissions;
+    // 🔥 якщо вже витягували permissions раніше — не робимо повторний запит
+    if (!request.permissions) {
+      const permissions = await this.UserRepository.getUserPermissions(user.id, tenantId);
+
+      if (!permissions) {
+        throw new ForbiddenException('User not in tenant');
+      }
+
+      request.permissions = permissions;
+    }
+
+    const userPermissions: Permission[] = request.permissions;
+
+    const { permissions, selfParam } = config;
 
     // 1️⃣ Перевірка full permissions
     const hasFullPermission = permissions.some((perm) => userPermissions.includes(perm));
@@ -51,7 +74,7 @@ export class PermissionGuard implements CanActivate {
       return true;
     }
 
-    // 2️⃣ Перевірка self permissions
+    // 2️⃣ Self permissions
     if (selfParam) {
       const paramValue = request.params?.[selfParam];
 

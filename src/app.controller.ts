@@ -11,7 +11,7 @@ export class AppController {
 
   @Get()
   @ApiBearerAuth(AUTH_COOKIES.ACCESS_TOKEN)
-  @RequirePermissions([Permission.USER_UPDATE, Permission.CHAT_MODERATE])
+  @RequirePermissions([Permission.USER_READ])
   getHello(): string {
     return this.appService.getHello();
   }

@@ -7,12 +7,14 @@ import {
 } from '@nestjs/swagger';
 import { HealthService } from './health.service';
 import { HealthResponseDto } from './dto/health-response.dto';
+import { Public } from '@src/common/decorators';
 
 @ApiTags('Health')
 @Controller('health')
 export class HealthController {
   constructor(private readonly healthService: HealthService) {}
 
+  @Public()
   @Get('liveness')
   @ApiOperation({
     summary: 'Liveness probe',
@@ -23,6 +25,7 @@ export class HealthController {
     return this.healthService.liveness();
   }
 
+  @Public()
   @Get('readiness')
   @ApiOperation({
     summary: 'Readiness probe',
@@ -34,6 +37,7 @@ export class HealthController {
     return this.healthService.readiness();
   }
 
+  @Public()
   @Get()
   @ApiOperation({
     summary: 'Full health status',

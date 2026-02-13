@@ -31,6 +31,7 @@ import { RefreshResponseDto } from '@src/modules/auth/dto/refresh.response.dto';
 import { CreatedUserDto } from '@src/modules/users/dto/created-user.dto';
 import { AUTH_COOKIES } from '@src/modules/auth/constants/auth-cookies.constants';
 import { Public } from '@src/common/decorators/public.decorator';
+import { TenantId } from '@src/common/decorators/tenant-id.decorator';
 
 @ApiTags(routesV1.auth.root)
 @Controller(routesV1.version)
@@ -59,8 +60,9 @@ export class AuthController {
   async register(
     @Body() dto: CreateUserDto,
     @Res({ passthrough: true }) res: Response,
+    @TenantId() tenantId: string,
   ): Promise<RegisterUserResponseDto> {
-    const { user, accessToken, refreshToken } = await this.authService.register(dto);
+    const { user, accessToken, refreshToken } = await this.authService.register(dto, tenantId);
 
     this.authCookiesService.setAuthCookies(res, { accessToken, refreshToken });
     return { user, accessToken };
@@ -103,6 +105,7 @@ export class AuthController {
   // =========================
   // LOGIN (LOCAL)
   // =========================
+  @Public()
   @Post(routesV1.auth.login)
   @UseGuards(AuthGuard('local'))
   @ApiOperation({
@@ -150,6 +153,7 @@ export class AuthController {
   // =========================
   // GOOGLE AUTH
   // =========================
+  @Public()
   @Get(routesV1.auth.google)
   @UseGuards(AuthGuard('google'))
   @ApiOperation({
@@ -159,6 +163,8 @@ export class AuthController {
   // @ApiExcludeEndpoint()
   google() {}
 
+  // google callback
+  @Public()
   @Get(routesV1.auth.googleCallback)
   @UseGuards(AuthGuard('google'))
   @ApiOperation({
@@ -185,6 +191,7 @@ export class AuthController {
   // =========================
   // GITHUB AUTH
   // =========================
+  @Public()
   @Get(routesV1.auth.github)
   @UseGuards(AuthGuard('github'))
   @ApiOperation({
@@ -202,6 +209,9 @@ export class AuthController {
       'Handles GitHub OAuth response, logs in or creates user, sets cookies and redirects.',
   })
   // @ApiExcludeEndpoint()
+
+  // github callback
+  @Public()
   async githubCallback(@Req() req: Request, @Res() res: Response) {
     const profile = req.user as {
       provider: AuthProvider;
@@ -225,6 +235,7 @@ export class AuthController {
   // =========================
   // FACEBOOK AUTH
   // =========================
+  @Public()
   @Get(routesV1.auth.facebook)
   @UseGuards(AuthGuard('facebook'))
   @ApiOperation({
@@ -234,6 +245,8 @@ export class AuthController {
   // @ApiExcludeEndpoint()
   facebook() {}
 
+  // facebook callback
+  @Public()
   @Get(routesV1.auth.facebookCallback)
   @UseGuards(AuthGuard('facebook'))
   @ApiOperation({
