@@ -43,7 +43,7 @@ jobs:
               ;;
           esac
 
-          URL="https://${HOST}/health"
+          URL="https://${HOST}/v1/health"
 
           echo "Health check URL: $URL"
 
