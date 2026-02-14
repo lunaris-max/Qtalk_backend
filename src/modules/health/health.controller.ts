@@ -8,14 +8,15 @@ import {
 import { HealthService } from './health.service';
 import { HealthResponseDto } from './dto/health-response.dto';
 import { Public } from '@src/common/decorators';
+import { routesV1 } from '@src/config';
 
-@ApiTags('Health')
-@Controller('health')
+@ApiTags(routesV1.health.root)
+@Controller(routesV1.version)
 export class HealthController {
   constructor(private readonly healthService: HealthService) {}
 
   @Public()
-  @Get('liveness')
+  @Get(routesV1.health.liveness)
   @ApiOperation({
     summary: 'Liveness probe',
     description: 'Checks that the Node.js process is alive',
@@ -26,7 +27,7 @@ export class HealthController {
   }
 
   @Public()
-  @Get('readiness')
+  @Get(routesV1.health.readiness)
   @ApiOperation({
     summary: 'Readiness probe',
     description: 'Checks if the service is ready to receive traffic',
@@ -38,7 +39,7 @@ export class HealthController {
   }
 
   @Public()
-  @Get()
+  @Get(routesV1.health.root)
   @ApiOperation({
     summary: 'Full health status',
     description: 'Detailed health information for monitoring and debugging',

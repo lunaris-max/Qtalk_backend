@@ -1,5 +1,6 @@
 import { PrismaService } from '@db/prisma.service';
 import { Injectable, CanActivate, ExecutionContext, BadRequestException } from '@nestjs/common';
+import { routesV1 } from '@src/config';
 
 @Injectable()
 export class TenantGuard implements CanActivate {
@@ -9,7 +10,13 @@ export class TenantGuard implements CanActivate {
     const req = context.switchToHttp().getRequest();
 
     // skip checks for tenants paths
-    const ignoredPaths = ['/tenants', '/tenants/'];
+    const baseV1 = `/${routesV1.version}`;
+
+    const ignoredPaths = [routesV1.tenant.root, routesV1.health.root].map(
+      (route) => `${baseV1}/${route}`,
+    );
+    console.log(req.path);
+    console.log(routesV1.tenant.root);
     if (ignoredPaths.some((path) => req.path.startsWith(path))) {
       return true;
     }

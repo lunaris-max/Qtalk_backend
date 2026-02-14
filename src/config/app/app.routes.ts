@@ -6,6 +6,7 @@ const interestsRoot = 'interests';
 const roomsRoot = 'rooms';
 const mediaRoot = 'media';
 const tenantsRoot = 'tenant';
+const healthsRoot = 'health';
 
 // Api Versions
 const v1 = 'v1';
@@ -78,5 +79,10 @@ export const routesV1 = {
 
     // tenant users
     addUser: `/${tenantsRoot}/:tenantId/user`,
+  },
+  health: {
+    root: healthsRoot,
+    liveness: `/${healthsRoot}/liveness`,
+    readiness: `/${healthsRoot}/readiness`,
   },
 };
