@@ -25,8 +25,8 @@
     "migrate:status:prod": "cross-env NODE_ENV=production dotenv -e .env.prod -- prisma migrate status",
     "m1": "cross-env NODE_ENV=production dotenv -e .env.prod -- prisma migrate reset",
     "db:tables:prod": "cross-env NODE_ENV=production dotenv -e .env.prod -- prisma db execute --stdin \"SELECT tablename FROM pg_tables WHERE schemaname='public';\"",
-    "prepare:dev": "husky install",
-    "prepare": "husky",
+    "prepare:dev": "husky",
+    "prepare": "echo 'Skipping husky in production'",
     "build:ts": "tsc -p tsconfig.build.json && npx tsc-alias -p tsconfig.build.json"
   },
   "lint-staged": {
