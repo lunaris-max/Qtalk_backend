@@ -52,7 +52,7 @@ export class PermissionGuard implements CanActivate {
       throw new ForbiddenException('Tenant missing');
     }
 
-    // 🔥 якщо вже витягували permissions раніше — не робимо повторний запит
+    // check if permissions exist
     if (!request.permissions) {
       const permissions = await this.UserRepository.getUserPermissions(user.id, tenantId);
 
@@ -67,14 +67,14 @@ export class PermissionGuard implements CanActivate {
 
     const { permissions, selfParam } = config;
 
-    // 1️⃣ Перевірка full permissions
+    // check full permissions
     const hasFullPermission = permissions.some((perm) => userPermissions.includes(perm));
 
     if (hasFullPermission) {
       return true;
     }
 
-    // 2️⃣ Self permissions
+    //  Self permissions
     if (selfParam) {
       const paramValue = request.params?.[selfParam];
 

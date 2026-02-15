@@ -15,8 +15,7 @@ export class TenantGuard implements CanActivate {
     const ignoredPaths = [routesV1.tenant.root, routesV1.health.root].map(
       (route) => `${baseV1}/${route}`,
     );
-    console.log(req.path);
-    console.log(routesV1.tenant.root);
+
     if (ignoredPaths.some((path) => req.path.startsWith(path))) {
       return true;
     }
