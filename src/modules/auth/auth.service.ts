@@ -18,8 +18,8 @@ export class AuthService {
     private readonly authCookiesService: AuthCookiesService,
   ) {}
 
-  async register(dto: CreateUserDto) {
-    const user = await this.usersService.create(dto);
+  async register(dto: CreateUserDto, tenantId: string) {
+    const user = await this.usersService.create(dto, tenantId);
 
     if (!user.login) {
       throw new UnauthorizedException('User login is missing');
@@ -30,9 +30,7 @@ export class AuthService {
       login: user.login,
     });
 
-    const refreshToken = this.refreshTokenService.generate();
-
-    await this.refreshTokenService.save(user.id, refreshToken);
+    const refreshToken = await this.refreshTokenService.createRefreshToken(user.id);
 
     return {
       user,
@@ -47,26 +45,26 @@ export class AuthService {
       throw new UnauthorizedException('No refresh token');
     }
 
-    // check refresh token in Mongo
-    const stored = await this.refreshTokenService.validate(refreshToken);
+    // validate refresh JWT + check hash in Mongo
+    const userId = await this.refreshTokenService.validate(refreshToken);
 
     // get user
     const user = await this.usersService.findOne({
-      id: stored.userId,
+      id: userId,
     });
 
-    if (!user.login) {
-      throw new UnauthorizedException('User login is missing');
+    if (!user || !user.login) {
+      throw new UnauthorizedException('User not found');
     }
 
-    // new access token
+    // generate new access token
     const accessToken = this.accessTokenService.generate({
       sub: user.id,
       login: user.login,
     });
 
-    // rotation refresh token
-    const newRefreshToken = await this.refreshTokenService.rotate(refreshToken, user.id);
+    // rotate refresh token
+    const newRefreshToken = await this.refreshTokenService.rotate(refreshToken);
 
     return {
       accessToken,
@@ -151,9 +149,7 @@ export class AuthService {
       login: payload.identifier,
     });
 
-    const refreshToken = this.refreshTokenService.generate();
-
-    await this.refreshTokenService.save(payload.id, refreshToken);
+    const refreshToken = await this.refreshTokenService.createRefreshToken(payload.id);
 
     this.authCookiesService.setAuthCookies(res, {
       accessToken,

@@ -6,13 +6,15 @@ export class RefreshToken {
   @Prop({ required: true, index: true })
   userId: string;
 
+  @Prop({ required: true, unique: true, index: true })
+  tokenId: string;
+
   @Prop({ required: true })
   tokenHash: string;
-
-  @Prop({ default: false })
-  revoked: boolean;
 }
 
 export type RefreshTokenDocument = RefreshToken & Document;
 
 export const RefreshTokenSchema = SchemaFactory.createForClass(RefreshToken);
+
+RefreshTokenSchema.index({ userId: 1, createdAt: 1 });

@@ -49,6 +49,7 @@ export default tseslint.config(
     },
 
     rules: {
+      'no-console': 'error',
       /* ---------- Clean code ---------- */
       'unused-imports/no-unused-imports': 'error',
 

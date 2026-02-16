@@ -6,9 +6,6 @@ import {
   MinLength,
   MaxLength,
   Matches,
-  IsInt,
-  Min,
-  Max,
   IsDateString,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';

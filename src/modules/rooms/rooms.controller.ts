@@ -22,8 +22,10 @@ import { RoomsService } from './rooms.service';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { CreatedRoomDto, RoomDetailsDto } from './dto/responses';
 import { CreateRoomDocs, GetRoomDocs } from './swagger-docs';
+import { Public } from '@src/common/decorators';
 
 @ApiTags(routesV1.rooms.root)
+@Public()
 @Controller(routesV1.version)
 export class RoomsController {
   constructor(private readonly roomsService: RoomsService) {}
@@ -51,9 +53,7 @@ export class RoomsController {
     @Req() req: Request,
     @Body() dto: CreateRoomDto,
     @UploadedFile() file: Express.Multer.File | undefined,
-  )
-    : Promise<CreatedRoomDto>
-  {
+  ): Promise<CreatedRoomDto> {
     const user = req.user as { id?: string } | undefined;
     return this.roomsService.create(user?.id, dto, file);
   }

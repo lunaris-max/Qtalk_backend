@@ -36,8 +36,11 @@ import { UpdatedUserDto } from '@src/modules/users/dto/updated-user.dto';
 
 import { AUTH_COOKIES } from '@src/modules/auth/constants/auth-cookies.constants';
 import { UpdateUserInterestsDto } from '@src/modules/users/dto/update-user-interests.dto';
+import { TenantId } from '@src/common/decorators/tenant-id.decorator';
+import { Public } from '@src/common/decorators';
 
 @ApiTags(routesV1.user.root)
+@Public()
 @Controller(routesV1.version)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
@@ -61,8 +64,11 @@ export class UsersController {
     description: 'Validation error',
   })
   @Post(routesV1.user.create)
-  create(@Body() createUserDto: CreateUserDto): Promise<CreatedUserDto> {
-    return this.usersService.create(createUserDto);
+  create(
+    @Body() createUserDto: CreateUserDto,
+    @TenantId() tenantId: string,
+  ): Promise<CreatedUserDto> {
+    return this.usersService.create(createUserDto, tenantId);
   }
 
   // get all users

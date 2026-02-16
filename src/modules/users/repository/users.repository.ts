@@ -353,4 +353,38 @@ export class UsersRepository {
         : []),
     ]);
   }
+
+  async findByIdWithPermissions(userId: string, tenantId: string) {
+    return this.prisma.tenantUser.findUnique({
+      where: {
+        userId_tenantId: {
+          userId,
+          tenantId,
+        },
+      },
+      include: {
+        user: true,
+        permissions: true,
+      },
+    });
+  }
+  async getUserPermissions(userId: string, tenantId: string) {
+    const tenantUser = await this.prisma.tenantUser.findUnique({
+      where: {
+        userId_tenantId: {
+          userId,
+          tenantId,
+        },
+      },
+      include: {
+        permissions: true,
+      },
+    });
+
+    if (!tenantUser) {
+      return null;
+    }
+
+    return tenantUser.permissions.map((p) => p.permission);
+  }
 }
