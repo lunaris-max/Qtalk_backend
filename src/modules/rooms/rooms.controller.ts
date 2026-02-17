@@ -74,7 +74,8 @@ export class RoomsController {
   @Get(routesV1.rooms.findAll)
   @UseGuards(AuthGuard('jwt'))
   @GetRoomsDocs()
-  findAll(@Query() query: GetRoomsQueryDto): Promise<PaginatedRoomsDto> {
-    return this.roomsService.findAll(query);
+  findAll(@Req() req: Request, @Query() query: GetRoomsQueryDto): Promise<PaginatedRoomsDto> {
+    const user = req.user as { id?: string } | undefined;
+    return this.roomsService.findAll(user?.id, query);
   }
 }

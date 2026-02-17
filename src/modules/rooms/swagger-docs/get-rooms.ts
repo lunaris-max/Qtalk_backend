@@ -14,7 +14,8 @@ export const GetRoomsDocs = () =>
     ApiBearerAuth(AUTH_COOKIES.ACCESS_TOKEN),
     ApiOperation({
       summary: 'Get rooms list',
-      description: 'Returns rooms list with pagination and sorting by members count.',
+      description:
+        'Returns rooms list for the authenticated user (member or owner) with pagination and sorting.',
     }),
     ApiOkResponse({
       description: 'Rooms successfully retrieved',

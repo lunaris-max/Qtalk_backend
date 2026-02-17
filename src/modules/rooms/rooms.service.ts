@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { AccountStatus, Prisma, RoomLanguage } from '@prisma/client';
 import { CreateRoomDto } from './dto/create-room.dto';
-import { GetRoomsQueryDto } from './dto/get-rooms.query.dto';
+import { GetRoomsQueryDto, SortOrder } from './dto/get-rooms.query.dto';
 import { CreatedRoomDto, PaginatedRoomsDto, RoomDetailsDto } from './dto/responses';
 import { RoomsRepository } from './repository/rooms.repository';
 import { CloudinaryService } from '@src/infra/cloudinary/cloudinary.service';
@@ -185,6 +185,12 @@ export class RoomsService {
       throw new ForbiddenException('User is not a room member');
     }
 
+    await this.roomsRepository.touchRoomActivity({
+      roomId,
+      userId,
+      at: new Date(),
+    });
+
     return {
       id: room.id,
       name: room.name,
@@ -207,14 +213,44 @@ export class RoomsService {
     };
   }
 
-  async findAll(query: GetRoomsQueryDto): Promise<PaginatedRoomsDto> {
+  async findAll(userId: string | undefined, query: GetRoomsQueryDto): Promise<PaginatedRoomsDto> {
+    if (!userId) {
+      this.logger.warn('Rooms list fetch attempt without authentication');
+      throw new UnauthorizedException('User is not authenticated');
+    }
+
+    const user = await this.roomsRepository.findUserAccountStatus(userId);
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (user.accountStatus !== AccountStatus.ACTIVE) {
+      throw new ForbiddenException('User is not allowed to access rooms');
+    }
+
     const page = query.page ?? 1;
     const limit = query.limit ?? 10;
     const skip = (page - 1) * limit;
 
-    const orderBy = { members: { _count: query.order ?? 'desc' } };
+    const orderBy: Prisma.RoomOrderByWithRelationInput[] = [];
+    const pushOrderBy = (value?: Prisma.RoomOrderByWithRelationInput) => {
+      if (value) {
+        orderBy.push(value);
+      }
+    };
+
+    pushOrderBy(
+      query.membersCount ? { members: { _count: query.membersCount } } : undefined,
+    );
+    pushOrderBy(query.lastActivity ? { lastActivityAt: query.lastActivity } : undefined);
+
+    if (!orderBy.length) {
+      orderBy.push({ members: { _count: SortOrder.desc } });
+    }
 
     const { rooms, total } = await this.roomsRepository.findAllPaginated({
+      userId,
       skip,
       take: limit,
       orderBy,
@@ -230,7 +266,14 @@ export class RoomsService {
         maxAge: room.maxAge,
         languages: room.languages,
         photoUrl: room.photoUrl ?? undefined,
+        lastActivityAt: room.lastActivityAt ?? undefined,
         membersCount: room._count.members,
+        members: room.members.map((member) => ({
+          firstName: member.user.data?.firstName ?? undefined,
+          lastName: member.user.data?.lastName ?? undefined,
+          avatar: member.user.data?.avatar ?? undefined,
+          role: member.role,
+        })),
         createdAt: room.createdAt,
       })),
       page,

@@ -132,6 +132,7 @@ model Room {
   maxAge    Int            @default(100)
   languages RoomLanguage[]
   photoUrl  String?
+  lastActivityAt DateTime?
   ownerId   String
   createdAt DateTime       @default(now())
   updatedAt DateTime       @updatedAt
@@ -140,6 +141,8 @@ model Room {
   members   RoomMember[]
   interests RoomInterest[]
   media     Media[]
+
+  @@index([lastActivityAt])
 }
 
 model Media {
@@ -165,11 +168,13 @@ model RoomMember {
   userId   String
   role     RoomMemberRole @default(MEMBER)
   joinedAt DateTime       @default(now())
+  lastActivityAt DateTime?
 
   room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([roomId, userId])
+  @@index([roomId, lastActivityAt])
 }
 
 model RoomInterest {

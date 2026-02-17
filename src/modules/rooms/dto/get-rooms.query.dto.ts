@@ -1,28 +1,28 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEnum, IsOptional } from 'class-validator';
 import { PaginationQueryDto } from '@src/common/dto/pagination-query.dto';
-import { SortOrder } from '@prisma/client';
 
-export enum RoomsSortBy {
-  MembersCount = 'membersCount',
+export enum SortOrder {
+  asc = 'asc',
+  desc = 'desc',
 }
 
 export class GetRoomsQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({
-    enum: RoomsSortBy,
-    example: RoomsSortBy.MembersCount,
-    description: 'Sorting field',
+    enum: SortOrder,
+    example: SortOrder.desc,
+    description: 'Sort order for members count',
   })
-  @IsEnum(RoomsSortBy)
+  @IsEnum(SortOrder)
   @IsOptional()
-  sort?: RoomsSortBy = RoomsSortBy.MembersCount;
+  membersCount?: SortOrder;
 
   @ApiPropertyOptional({
     enum: SortOrder,
     example: SortOrder.desc,
-    description: 'Sort order',
+    description: 'Sort order for last activity',
   })
   @IsEnum(SortOrder)
   @IsOptional()
-  order?: SortOrder = SortOrder.desc;
+  lastActivity?: SortOrder;
 }

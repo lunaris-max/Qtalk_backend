@@ -204,15 +204,48 @@ export class RoomsRepository {
     });
   }
 
+  async touchRoomActivity(params: { roomId: string; userId: string; at: Date }) {
+    const { roomId, userId, at } = params;
+
+    await this.prisma.$transaction([
+      this.prisma.roomMember.update({
+        where: {
+          roomId_userId: {
+            roomId,
+            userId,
+          },
+        },
+        data: {
+          lastActivityAt: at,
+        },
+      }),
+      this.prisma.room.update({
+        where: { id: roomId },
+        data: {
+          lastActivityAt: at,
+        },
+      }),
+    ]);
+  }
+
   async findAllPaginated(params: {
+    userId: string;
     skip: number;
     take: number;
-    orderBy: Prisma.RoomOrderByWithRelationInput;
+    orderBy: Prisma.RoomOrderByWithRelationInput | Prisma.RoomOrderByWithRelationInput[];
   }) {
-    const { skip, take, orderBy } = params;
+    const { userId, skip, take, orderBy } = params;
+    const where = {
+      members: {
+        some: {
+          userId,
+        },
+      },
+    };
 
     const [rooms, total] = await this.prisma.$transaction([
       this.prisma.room.findMany({
+        where,
         skip,
         take,
         orderBy,
@@ -225,7 +258,24 @@ export class RoomsRepository {
           maxAge: true,
           languages: true,
           photoUrl: true,
+          lastActivityAt: true,
           createdAt: true,
+          members: {
+            select: {
+              role: true,
+              user: {
+                select: {
+                  data: {
+                    select: {
+                      firstName: true,
+                      lastName: true,
+                      avatar: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
           _count: {
             select: {
               members: true,
@@ -233,7 +283,7 @@ export class RoomsRepository {
           },
         },
       }),
-      this.prisma.room.count(),
+      this.prisma.room.count({ where }),
     ]);
 
     return { rooms, total };

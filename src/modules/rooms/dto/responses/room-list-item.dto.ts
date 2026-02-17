@@ -1,5 +1,19 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { RoomLanguage, RoomStatus, RoomType } from '@prisma/client';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { RoomLanguage, RoomMemberRole, RoomStatus, RoomType } from '@prisma/client';
+
+export class RoomListMemberDto {
+  @ApiPropertyOptional({ example: 'John' })
+  firstName?: string;
+
+  @ApiPropertyOptional({ example: 'Doe' })
+  lastName?: string;
+
+  @ApiPropertyOptional({ example: 'https://cdn.example.com/avatar.png' })
+  avatar?: string;
+
+  @ApiProperty({ enum: RoomMemberRole, example: RoomMemberRole.MEMBER })
+  role: RoomMemberRole;
+}
 
 export class RoomListItemDto {
   @ApiProperty({
@@ -39,6 +53,15 @@ export class RoomListItemDto {
   @ApiProperty({ example: 42 })
   membersCount: number;
 
+  @ApiProperty({ type: [RoomListMemberDto] })
+  members: RoomListMemberDto[];
+
   @ApiProperty({ example: '2026-02-04T10:00:00.000Z' })
   createdAt: Date;
+
+  @ApiProperty({
+    example: '2026-02-17T10:00:00.000Z',
+    required: false,
+  })
+  lastActivityAt?: Date | null;
 }
