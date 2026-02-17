@@ -1,11 +1,12 @@
 import { PrismaService } from '@db/prisma.service';
 import { Injectable } from '@nestjs/common';
 import {
+  InterestCategory,
+  Prisma,
   RoomLanguage,
   RoomMemberRole,
   RoomStatus,
   RoomType,
-  InterestCategory,
 } from '@prisma/client';
 import { CreateRoomDto } from '../dto/create-room.dto';
 
@@ -201,5 +202,40 @@ export class RoomsRepository {
         },
       },
     });
+  }
+
+  async findAllPaginated(params: {
+    skip: number;
+    take: number;
+    orderBy: Prisma.RoomOrderByWithRelationInput;
+  }) {
+    const { skip, take, orderBy } = params;
+
+    const [rooms, total] = await this.prisma.$transaction([
+      this.prisma.room.findMany({
+        skip,
+        take,
+        orderBy,
+        select: {
+          id: true,
+          name: true,
+          type: true,
+          status: true,
+          minAge: true,
+          maxAge: true,
+          languages: true,
+          photoUrl: true,
+          createdAt: true,
+          _count: {
+            select: {
+              members: true,
+            },
+          },
+        },
+      }),
+      this.prisma.room.count(),
+    ]);
+
+    return { rooms, total };
   }
 }

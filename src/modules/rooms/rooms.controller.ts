@@ -6,6 +6,7 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  Query,
   Req,
   UploadedFile,
   UseGuards,
@@ -20,8 +21,9 @@ import { memoryStorage } from 'multer';
 import { routesV1 } from '@src/config';
 import { RoomsService } from './rooms.service';
 import { CreateRoomDto } from './dto/create-room.dto';
-import { CreatedRoomDto, RoomDetailsDto } from './dto/responses';
-import { CreateRoomDocs, GetRoomDocs } from './swagger-docs';
+import { CreatedRoomDto, PaginatedRoomsDto, RoomDetailsDto } from './dto/responses';
+import { CreateRoomDocs, GetRoomDocs, GetRoomsDocs } from './swagger-docs';
+import { GetRoomsQueryDto } from './dto/get-rooms.query.dto';
 import { Public } from '@src/common/decorators';
 
 @ApiTags(routesV1.rooms.root)
@@ -67,5 +69,12 @@ export class RoomsController {
   ): Promise<RoomDetailsDto> {
     const user = req.user as { id?: string } | undefined;
     return this.roomsService.findOne(user?.id, id);
+  }
+
+  @Get(routesV1.rooms.findAll)
+  @UseGuards(AuthGuard('jwt'))
+  @GetRoomsDocs()
+  findAll(@Query() query: GetRoomsQueryDto): Promise<PaginatedRoomsDto> {
+    return this.roomsService.findAll(query);
   }
 }

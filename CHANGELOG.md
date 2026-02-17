@@ -11,6 +11,19 @@ and this project adheres to Semantic Versioning.
 
 - user age(int) changed to birthDate (DateTime)
 
+## [0.0.14] - 2026-02-17
+
+### Added
+
+- GET `/v1/rooms` endpoint for rooms list with pagination and sorting by members count
+- Rooms list query DTO (`page`, `limit`, `sort`, `order`)
+- Rooms list response DTOs: `RoomListItemDto` and `PaginatedRoomsDto`
+- Swagger docs for rooms list
+
+### Changed
+
+- Rooms repository now supports paginated list retrieval with members count
+
 ## [0.0.12] - 2026-02-04
 
 ### Added

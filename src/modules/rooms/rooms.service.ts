@@ -9,7 +9,8 @@ import {
 } from '@nestjs/common';
 import { AccountStatus, Prisma, RoomLanguage } from '@prisma/client';
 import { CreateRoomDto } from './dto/create-room.dto';
-import { CreatedRoomDto, RoomDetailsDto } from './dto/responses';
+import { GetRoomsQueryDto } from './dto/get-rooms.query.dto';
+import { CreatedRoomDto, PaginatedRoomsDto, RoomDetailsDto } from './dto/responses';
 import { RoomsRepository } from './repository/rooms.repository';
 import { CloudinaryService } from '@src/infra/cloudinary/cloudinary.service';
 import { MediaCreateInput, UploadResult } from './types';
@@ -203,6 +204,39 @@ export class RoomsService {
         gender: member.user.data?.gender ?? undefined,
         role: member.role,
       })),
+    };
+  }
+
+  async findAll(query: GetRoomsQueryDto): Promise<PaginatedRoomsDto> {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 10;
+    const skip = (page - 1) * limit;
+
+    const orderBy = { members: { _count: query.order ?? 'desc' } };
+
+    const { rooms, total } = await this.roomsRepository.findAllPaginated({
+      skip,
+      take: limit,
+      orderBy,
+    });
+
+    return {
+      items: rooms.map((room) => ({
+        id: room.id,
+        name: room.name,
+        type: room.type,
+        status: room.status,
+        minAge: room.minAge,
+        maxAge: room.maxAge,
+        languages: room.languages,
+        photoUrl: room.photoUrl ?? undefined,
+        membersCount: room._count.members,
+        createdAt: room.createdAt,
+      })),
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
     };
   }
 }
