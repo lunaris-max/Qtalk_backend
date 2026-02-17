@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { AccountStatus, AuthProvider, Gender } from '@prisma/client';
-import { IsDateString, IsNumber, IsOptional, IsUUID } from 'class-validator';
+import { IsDateString, IsOptional, IsUUID } from 'class-validator';
 
 export class UpdatedUserDto {
   @ApiProperty({

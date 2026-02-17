@@ -5,6 +5,8 @@ const mailRoot = 'mail';
 const interestsRoot = 'interests';
 const roomsRoot = 'rooms';
 const mediaRoot = 'media';
+const tenantsRoot = 'tenant';
+const healthsRoot = 'health';
 
 // Api Versions
 const v1 = 'v1';
@@ -56,5 +58,31 @@ export const routesV1 = {
     sendConfirm: `/${mailRoot}/confirm/send`,
     resetPasswordSend: `/${mailRoot}/reset-password/send`,
     resetPasswordConfirm: `/${mailRoot}/reset-password/confirm`,
+  },
+  tenant: {
+    root: tenantsRoot,
+
+    // tenant CRUD
+    create: `/${tenantsRoot}`,
+    findAll: `/${tenantsRoot}`,
+    findOne: `/${tenantsRoot}/:id`,
+    update: `/${tenantsRoot}/:id`,
+    delete: `/${tenantsRoot}/:id`,
+
+    // tenant domains
+    domainsRoot: `/${tenantsRoot}/domain`,
+    createDomain: `/${tenantsRoot}/domain`,
+    findAllDomains: `/${tenantsRoot}/domain`,
+    findOneDomain: `/${tenantsRoot}/domain/:id`,
+    updateDomain: `/${tenantsRoot}/domain/:id`,
+    deleteDomain: `/${tenantsRoot}/domain/:id`,
+
+    // tenant users
+    addUser: `/${tenantsRoot}/:tenantId/user`,
+  },
+  health: {
+    root: healthsRoot,
+    liveness: `/${healthsRoot}/liveness`,
+    readiness: `/${healthsRoot}/readiness`,
   },
 };

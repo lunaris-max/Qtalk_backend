@@ -28,7 +28,10 @@ const parseStringArray = (value: unknown): string[] => {
     const parsed = JSON.parse(trimmed);
     return Array.isArray(parsed) ? parsed : [String(parsed)];
   } catch {
-    return trimmed.split(',').map((item) => item.trim()).filter(Boolean);
+    return trimmed
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
   }
 };
 

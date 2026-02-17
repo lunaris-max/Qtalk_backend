@@ -17,12 +17,15 @@ import { InterestCategory } from '@prisma/client';
 import { InterestsService } from './interests.service';
 import { routesV1 } from '@src/config';
 import { AUTH_COOKIES } from '@src/modules/auth/constants/auth-cookies.constants';
+import { Public } from '@src/common/decorators';
 
 @ApiTags(routesV1.interests.root)
 @Controller(routesV1.version)
 export class InterestsController {
   constructor(private readonly interestsService: InterestsService) {}
 
+  // create interests
+  @Public()
   @Post(routesV1.interests.create)
   @ApiBearerAuth(AUTH_COOKIES.ACCESS_TOKEN)
   @ApiOperation({ summary: 'Create interest' })
@@ -30,6 +33,8 @@ export class InterestsController {
     return this.interestsService.create(dto);
   }
 
+  // find all
+  @Public()
   @Get(routesV1.interests.findAll)
   @ApiBearerAuth(AUTH_COOKIES.ACCESS_TOKEN)
   @ApiOperation({ summary: 'Get all interests' })
@@ -38,6 +43,8 @@ export class InterestsController {
     return this.interestsService.findAll(category);
   }
 
+  // find one
+  @Public()
   @Get(routesV1.interests.findOne)
   @ApiOperation({ summary: 'Get interest by id' })
   @ApiParam({ name: 'id', example: 1 })
@@ -45,12 +52,17 @@ export class InterestsController {
     return this.interestsService.findOne(id);
   }
 
+  // update
+
+  @Public()
   @Patch(routesV1.interests.update)
   @ApiOperation({ summary: 'Update interest' })
   update(@Param('id', new ParseUUIDPipe()) id: string, @Body() dto: UpdateInterestDto) {
     return this.interestsService.update(id, dto);
   }
 
+  // delete
+  @Public()
   @Delete(routesV1.interests.delete)
   @ApiOperation({ summary: 'Delete interest' })
   remove(@Param('id', new ParseUUIDPipe()) id: string) {

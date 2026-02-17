@@ -3,6 +3,7 @@ import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { MailService } from './mail.service';
 import { MailType } from './mail.types';
 import { routesV1 } from '@src/config/app/app.routes';
+import { Public } from '@src/common/decorators';
 
 @ApiTags('Mail')
 @Controller(routesV1.version)
@@ -12,6 +13,7 @@ export class MailController {
   // =========================
   // SEND VERIFICATION CODE
   // =========================
+  @Public()
   @Post(routesV1.mail.sendConfirm)
   @ApiOperation({
     summary: 'Send email verification code',
@@ -48,6 +50,7 @@ export class MailController {
   // =========================
   // VERIFY EMAIL CODE
   // =========================
+  @Public()
   @Post(routesV1.mail.confirm)
   @ApiOperation({
     summary: 'Confirm email verification',
@@ -89,6 +92,7 @@ export class MailController {
   // =================================
   //            password reset
   // =================================
+  @Public()
   @Post(routesV1.mail.resetPasswordSend)
   @ApiOperation({
     summary: 'Send password reset code',
@@ -125,6 +129,7 @@ export class MailController {
   // =============================
   //           password reset confirm
   // =============================
+  @Public()
   @Post(routesV1.mail.resetPasswordConfirm)
   @ApiOperation({
     summary: 'Confirm password reset',
