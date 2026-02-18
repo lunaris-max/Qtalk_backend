@@ -21,6 +21,7 @@ import { CreateRoomDto } from './dto/create-room.dto';
 import { SortOrder } from './dto/get-rooms.query.dto';
 import { RoomsRepository } from './repository/rooms.repository';
 import { RoomsService } from './rooms.service';
+import { MailService } from '@src/modules/mail/mail.service';
 
 const baseDto: CreateRoomDto = {
   name: 'Gaming Night',
@@ -83,6 +84,7 @@ describe('RoomsService', () => {
   let service: RoomsService;
   let roomsRepository: jest.Mocked<RoomsRepository>;
   let cloudinaryService: jest.Mocked<CloudinaryService>;
+  let mailService: jest.Mocked<MailService>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -96,6 +98,9 @@ describe('RoomsService', () => {
             findAllPaginated: jest.fn(),
             findUserAccountStatus: jest.fn(),
             findRoomWithMembers: jest.fn(),
+            countReportsByUserSince: jest.fn(),
+            createRoomReport: jest.fn(),
+            findUserEmail: jest.fn(),
           },
         },
         {
@@ -104,12 +109,19 @@ describe('RoomsService', () => {
             uploadBuffer: jest.fn(),
           },
         },
+        {
+          provide: MailService,
+          useValue: {
+            send: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
     service = module.get<RoomsService>(RoomsService);
     roomsRepository = module.get(RoomsRepository) as jest.Mocked<RoomsRepository>;
     cloudinaryService = module.get(CloudinaryService) as jest.Mocked<CloudinaryService>;
+    mailService = module.get(MailService) as jest.Mocked<MailService>;
   });
 
   describe('create', () => {

@@ -22,10 +22,11 @@ import { routesV1 } from '@src/config';
 import { RoomsService } from './rooms.service';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { CreatedRoomDto, PaginatedRoomsDto, RoomDetailsDto } from './dto/responses';
-import { CreateRoomDocs, GetRoomDocs, GetRoomsDocs } from './swagger-docs';
+import { CreateRoomDocs, GetRoomDocs, GetRoomsDocs, ReportRoomDocs } from './swagger-docs';
 import { GetRoomsQueryDto } from './dto/get-rooms.query.dto';
 import { RequirePermissions } from '@src/common/decorators';
 import { Permission } from '@prisma/client';
+import { ReportRoomDto } from './dto/report-room.dto';
 
 @ApiTags(routesV1.rooms.root)
 @Controller(routesV1.version)
@@ -77,5 +78,17 @@ export class RoomsController {
   findAll(@Req() req: Request, @Query() query: GetRoomsQueryDto): Promise<PaginatedRoomsDto> {
     const user = req.user as { id: string };
     return this.roomsService.findAll(user?.id, query);
+  }
+
+  @Post(routesV1.rooms.report)
+  @RequirePermissions([Permission.USER_READ])
+  @ReportRoomDocs()
+  report(
+    @Req() req: Request,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: ReportRoomDto,
+  ): Promise<{ success: true }> {
+    const user = req.user as { id: string };
+    return this.roomsService.reportRoom(user?.id, id, dto);
   }
 }

@@ -1,5 +1,4 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import type { Express } from 'express';
 
 import { CloudinaryService } from '@src/infra/cloudinary/cloudinary.service';
 import { MediaUploadResponseDto } from './dto/media-upload-response.dto';

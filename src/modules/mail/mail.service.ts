@@ -6,6 +6,7 @@ import { verifyEmailTemplate } from './templates/verify-email.template';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { resetPasswordTemplate } from './templates/reset-password.template';
 import { mailConfig } from '@src/config';
+import { roomReportTemplate } from './templates/room-report.template';
 
 @Injectable()
 export class MailService {
@@ -26,13 +27,19 @@ export class MailService {
   // =========================
   // PUBLIC API
   // =========================
-  async send(type: MailType, payload: { email: string }) {
+  async send(
+    type: MailType,
+    payload: { email: string } | RoomReportPayload,
+  ) {
     switch (type) {
       case MailType.VERIFY_EMAIL:
-        return this.sendVerifyEmail(payload.email);
+        return this.sendVerifyEmail((payload as { email: string }).email);
 
       case MailType.RESET_PASSWORD:
-        return this.sendResetPassword(payload.email);
+        return this.sendResetPassword((payload as { email: string }).email);
+
+      case MailType.ROOM_REPORT:
+        return this.sendRoomReport(payload as RoomReportPayload);
 
       default: {
         const exhaustiveCheck: never = type;
@@ -186,6 +193,29 @@ export class MailService {
     return { success: true };
   }
 
+  // =========================
+  // SEND ROOM REPORT
+  // =========================
+  private async sendRoomReport(payload: RoomReportPayload) {
+    const template = roomReportTemplate({
+      reporterEmail: payload.email,
+      roomId: payload.roomId,
+      roomName: payload.roomName,
+      roomOwnerId: payload.roomOwnerId,
+      reason: payload.reason,
+      details: payload.details,
+    });
+
+    await this.transporter.sendMail({
+      from: mailConfig.from,
+      to: mailConfig.user,
+      subject: template.subject,
+      html: template.html,
+    });
+
+    return { success: true };
+  }
+
   async confirmResetPassword(payload: { email: string; code: string; newPassword: string }) {
     const authMethod = await this.prisma.authMethod.findFirst({
       where: {
@@ -240,3 +270,12 @@ export class MailService {
     return Math.floor(100000 + Math.random() * 900000).toString();
   }
 }
+
+type RoomReportPayload = {
+  email: string;
+  roomId: string;
+  roomName: string;
+  roomOwnerId: string;
+  reason: string;
+  details?: string;
+};

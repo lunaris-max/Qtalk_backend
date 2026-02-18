@@ -2,6 +2,8 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  HttpException,
+  HttpStatus,
   Injectable,
   Logger,
   NotFoundException,
@@ -14,6 +16,9 @@ import { CreatedRoomDto, PaginatedRoomsDto, RoomDetailsDto } from './dto/respons
 import { RoomsRepository } from './repository/rooms.repository';
 import { CloudinaryService } from '@src/infra/cloudinary/cloudinary.service';
 import { MediaCreateInput, UploadResult } from './types';
+import { ReportRoomDto } from './dto/report-room.dto';
+import { MailService } from '@src/modules/mail/mail.service';
+import { MailType } from '@src/modules/mail/mail.types';
 
 @Injectable()
 export class RoomsService {
@@ -22,6 +27,7 @@ export class RoomsService {
   constructor(
     private readonly roomsRepository: RoomsRepository,
     private readonly cloudinaryService: CloudinaryService,
+    private readonly mailService: MailService,
   ) {}
 
   async create(
@@ -157,8 +163,7 @@ export class RoomsService {
     ];
   }
 
-  async findOne(userId: string, roomId: string): Promise<RoomDetailsDto> {
-
+  private async getMemberRoomOrThrow(userId: string, roomId: string) {
     const room = await this.roomsRepository.findRoomWithMembers(roomId);
 
     if (!room) {
@@ -170,6 +175,12 @@ export class RoomsService {
     if (!isMember) {
       throw new ForbiddenException('User is not a room member');
     }
+
+    return room;
+  }
+
+  async findOne(userId: string, roomId: string): Promise<RoomDetailsDto> {
+    const room = await this.getMemberRoomOrThrow(userId, roomId);
 
     return {
       id: room.id,
@@ -243,6 +254,84 @@ export class RoomsService {
       total,
       totalPages: Math.ceil(total / limit),
     };
+  }
+
+  async reportRoom(
+    userId: string,
+    roomId: string,
+    dto: ReportRoomDto,
+  ): Promise<{ success: true }> {
+    this.logger.log(`Room report started: roomId=${roomId}, reporterId=${userId}`);
+
+    try {
+      const room = await this.getMemberRoomOrThrow(userId, roomId);
+
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+      const recentReports = await this.roomsRepository.countReportsByUserSince(userId, oneHourAgo);
+
+      if (recentReports >= 3) {
+        throw new HttpException('Rate limit exceeded', HttpStatus.TOO_MANY_REQUESTS);
+      }
+
+      const userEmail = await this.roomsRepository.findUserEmail(userId);
+
+      if (!userEmail?.email) {
+        throw new BadRequestException('User email not found');
+      }
+
+      const reason = dto.reason.trim();
+      const trimmedDetails = dto.details?.trim();
+      const details = trimmedDetails ? trimmedDetails : undefined;
+
+      const basePayload = {
+        roomId,
+        reason,
+        details,
+      };
+
+      const reportPayload = {
+        ...basePayload,
+        reporterId: userId,
+      };
+
+      const mailPayload = {
+        ...basePayload,
+        email: userEmail.email,
+        roomName: room.name,
+        roomOwnerId: room.ownerId,
+      };
+
+      await this.roomsRepository.createRoomReport(reportPayload);
+      await this.mailService.send(MailType.ROOM_REPORT, mailPayload);
+
+      this.logger.log(`Room report completed: roomId=${room.id}, reporterId=${userId}`);
+
+      return { success: true };
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        this.logger.warn(
+          `Room report prisma error: code=${error.code}, roomId=${roomId}, reporterId=${userId}`,
+        );
+
+        if (error.code === 'P2003') {
+          throw new NotFoundException('Room or reporter not found');
+        }
+      }
+
+      if (error instanceof HttpException) {
+        this.logger.warn(
+          `Room report failed: roomId=${roomId}, reporterId=${userId}, status=${error.getStatus()}`,
+        );
+        throw error;
+      }
+
+      this.logger.error(
+        `Room report failed: roomId=${roomId}, reporterId=${userId}`,
+        error instanceof Error ? error.stack : String(error),
+      );
+
+      throw error;
+    }
   }
 }
 
