@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog,
 and this project adheres to Semantic Versioning.
 
+## [0.0.16] - 2026-02-18
+
+### Added
+
+- POST `/v1/rooms/:id/report` endpoint for room reports (members only)
+- Report room DTO with `reason` and optional `details`
+- RoomReport model and repository helpers for storing reports
+- Email notification with report details sent to system mailbox
+- Rate limiting for room reports (max 3 per hour per user)
+
 ## [0.0.15] - 2026-02-17
 
 ### Added

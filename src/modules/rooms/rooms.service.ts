@@ -2,6 +2,8 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  HttpException,
+  HttpStatus,
   Injectable,
   Logger,
   NotFoundException,
@@ -14,6 +16,9 @@ import { CreatedRoomDto, PaginatedRoomsDto, RoomDetailsDto } from './dto/respons
 import { RoomsRepository } from './repository/rooms.repository';
 import { CloudinaryService } from '@src/infra/cloudinary/cloudinary.service';
 import { MediaCreateInput, UploadResult } from './types';
+import { ReportRoomDto } from './dto/report-room.dto';
+import { MailService } from '@src/modules/mail/mail.service';
+import { MailType } from '@src/modules/mail/mail.types';
 
 @Injectable()
 export class RoomsService {
@@ -22,6 +27,7 @@ export class RoomsService {
   constructor(
     private readonly roomsRepository: RoomsRepository,
     private readonly cloudinaryService: CloudinaryService,
+    private readonly mailService: MailService,
   ) {}
 
   async create(
@@ -157,8 +163,7 @@ export class RoomsService {
     ];
   }
 
-  async findOne(userId: string, roomId: string): Promise<RoomDetailsDto> {
-
+  private async getMemberRoomOrThrow(userId: string, roomId: string) {
     const room = await this.roomsRepository.findRoomWithMembers(roomId);
 
     if (!room) {
@@ -170,6 +175,12 @@ export class RoomsService {
     if (!isMember) {
       throw new ForbiddenException('User is not a room member');
     }
+
+    return room;
+  }
+
+  async findOne(userId: string, roomId: string): Promise<RoomDetailsDto> {
+    const room = await this.getMemberRoomOrThrow(userId, roomId);
 
     return {
       id: room.id,
@@ -243,6 +254,50 @@ export class RoomsService {
       total,
       totalPages: Math.ceil(total / limit),
     };
+  }
+
+  async reportRoom(
+    userId: string | undefined,
+    roomId: string,
+    dto: ReportRoomDto,
+  ): Promise<{ success: true }> {
+    if (!userId) {
+      this.logger.warn('Room report attempt without authentication');
+      throw new UnauthorizedException('User is not authenticated');
+    }
+
+    const room = await this.getMemberRoomOrThrow(userId, roomId);
+
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    const recentReports = await this.roomsRepository.countReportsByUserSince(userId, oneHourAgo);
+
+    if (recentReports >= 3) {
+      throw new HttpException('Rate limit exceeded', HttpStatus.TOO_MANY_REQUESTS);
+    }
+
+    const userEmail = await this.roomsRepository.findUserEmail(userId);
+
+    if (!userEmail?.email) {
+      throw new BadRequestException('User email not found');
+    }
+
+    await this.roomsRepository.createRoomReport({
+      roomId,
+      reporterId: userId,
+      reason: dto.reason.trim(),
+      details: dto.details?.trim() || undefined,
+    });
+
+    await this.mailService.send(MailType.ROOM_REPORT, {
+      email: userEmail.email,
+      roomId: room.id,
+      roomName: room.name,
+      roomOwnerId: room.ownerId,
+      reason: dto.reason.trim(),
+      details: dto.details?.trim(),
+    });
+
+    return { success: true };
   }
 }
 
