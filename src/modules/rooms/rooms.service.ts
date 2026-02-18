@@ -257,47 +257,81 @@ export class RoomsService {
   }
 
   async reportRoom(
-    userId: string | undefined,
+    userId: string,
     roomId: string,
     dto: ReportRoomDto,
   ): Promise<{ success: true }> {
-    if (!userId) {
-      this.logger.warn('Room report attempt without authentication');
-      throw new UnauthorizedException('User is not authenticated');
+    this.logger.log(`Room report started: roomId=${roomId}, reporterId=${userId}`);
+
+    try {
+      const room = await this.getMemberRoomOrThrow(userId, roomId);
+
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+      const recentReports = await this.roomsRepository.countReportsByUserSince(userId, oneHourAgo);
+
+      if (recentReports >= 3) {
+        throw new HttpException('Rate limit exceeded', HttpStatus.TOO_MANY_REQUESTS);
+      }
+
+      const userEmail = await this.roomsRepository.findUserEmail(userId);
+
+      if (!userEmail?.email) {
+        throw new BadRequestException('User email not found');
+      }
+
+      const reason = dto.reason.trim();
+      const trimmedDetails = dto.details?.trim();
+      const details = trimmedDetails ? trimmedDetails : undefined;
+
+      const basePayload = {
+        roomId,
+        reason,
+        details,
+      };
+
+      const reportPayload = {
+        ...basePayload,
+        reporterId: userId,
+      };
+
+      const mailPayload = {
+        ...basePayload,
+        email: userEmail.email,
+        roomName: room.name,
+        roomOwnerId: room.ownerId,
+      };
+
+      await this.roomsRepository.createRoomReport(reportPayload);
+      await this.mailService.send(MailType.ROOM_REPORT, mailPayload);
+
+      this.logger.log(`Room report completed: roomId=${room.id}, reporterId=${userId}`);
+
+      return { success: true };
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        this.logger.warn(
+          `Room report prisma error: code=${error.code}, roomId=${roomId}, reporterId=${userId}`,
+        );
+
+        if (error.code === 'P2003') {
+          throw new NotFoundException('Room or reporter not found');
+        }
+      }
+
+      if (error instanceof HttpException) {
+        this.logger.warn(
+          `Room report failed: roomId=${roomId}, reporterId=${userId}, status=${error.getStatus()}`,
+        );
+        throw error;
+      }
+
+      this.logger.error(
+        `Room report failed: roomId=${roomId}, reporterId=${userId}`,
+        error instanceof Error ? error.stack : String(error),
+      );
+
+      throw error;
     }
-
-    const room = await this.getMemberRoomOrThrow(userId, roomId);
-
-    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-    const recentReports = await this.roomsRepository.countReportsByUserSince(userId, oneHourAgo);
-
-    if (recentReports >= 3) {
-      throw new HttpException('Rate limit exceeded', HttpStatus.TOO_MANY_REQUESTS);
-    }
-
-    const userEmail = await this.roomsRepository.findUserEmail(userId);
-
-    if (!userEmail?.email) {
-      throw new BadRequestException('User email not found');
-    }
-
-    await this.roomsRepository.createRoomReport({
-      roomId,
-      reporterId: userId,
-      reason: dto.reason.trim(),
-      details: dto.details?.trim() || undefined,
-    });
-
-    await this.mailService.send(MailType.ROOM_REPORT, {
-      email: userEmail.email,
-      roomId: room.id,
-      roomName: room.name,
-      roomOwnerId: room.ownerId,
-      reason: dto.reason.trim(),
-      details: dto.details?.trim(),
-    });
-
-    return { success: true };
   }
 }
 

@@ -88,7 +88,7 @@ export class RoomsController {
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() dto: ReportRoomDto,
   ): Promise<{ success: true }> {
-    const user = req.user as { id?: string } | undefined;
+    const user = req.user as { id: string };
     return this.roomsService.reportRoom(user?.id, id, dto);
   }
 }
