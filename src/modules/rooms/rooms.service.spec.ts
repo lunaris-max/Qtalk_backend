@@ -8,6 +8,7 @@ import {
 import { Test, type TestingModule } from '@nestjs/testing';
 import {
   AccountStatus,
+  Gender,
   InterestCategory,
   RoomLanguage,
   RoomMemberRole,
@@ -95,7 +96,6 @@ describe('RoomsService', () => {
             findAllPaginated: jest.fn(),
             findUserAccountStatus: jest.fn(),
             findRoomWithMembers: jest.fn(),
-            touchRoomActivity: jest.fn(),
           },
         },
         {
@@ -244,6 +244,28 @@ describe('RoomsService', () => {
       );
     });
 
+    it('skips interests lookup when interestIds are not provided', async () => {
+      roomsRepository.findUserAccountStatus.mockResolvedValue({
+        accountStatus: AccountStatus.ACTIVE,
+      });
+      roomsRepository.createRoomWithRelations.mockResolvedValue(buildCreatedRoom());
+
+      const dto: CreateRoomDto = {
+        name: baseDto.name,
+        type: baseDto.type,
+        languages: baseDto.languages,
+      };
+
+      await service.create('user-id', dto, undefined);
+
+      expect(roomsRepository.countInterestsByIds).not.toHaveBeenCalled();
+      expect(roomsRepository.createRoomWithRelations).toHaveBeenCalledWith(
+        expect.objectContaining({
+          interestIds: [],
+        }),
+      );
+    });
+
     it('throws ConflictException on unique constraint error', async () => {
       roomsRepository.findUserAccountStatus.mockResolvedValue({
         accountStatus: AccountStatus.ACTIVE,
@@ -270,53 +292,23 @@ describe('RoomsService', () => {
   });
 
   describe('findAll', () => {
-    it('builds orderBy for membersCount and lastActivity', async () => {
-      roomsRepository.findUserAccountStatus.mockResolvedValue({
-        accountStatus: AccountStatus.ACTIVE,
-      });
+    it('builds orderBy with membersCount when provided', async () => {
       roomsRepository.findAllPaginated.mockResolvedValue({ rooms: [], total: 0 });
 
       await service.findAll('user-id', {
         page: 1,
         limit: 10,
         membersCount: SortOrder.asc,
-        lastActivity: SortOrder.desc,
       });
 
       expect(roomsRepository.findAllPaginated).toHaveBeenCalledWith(
         expect.objectContaining({
-          userId: 'user-id',
-          orderBy: [
-            { members: { _count: SortOrder.asc } },
-            { lastActivityAt: SortOrder.desc },
-          ],
-        }),
-      );
-    });
-
-    it('builds orderBy for lastActivity only', async () => {
-      roomsRepository.findUserAccountStatus.mockResolvedValue({
-        accountStatus: AccountStatus.ACTIVE,
-      });
-      roomsRepository.findAllPaginated.mockResolvedValue({ rooms: [], total: 0 });
-
-      await service.findAll('user-id', {
-        page: 1,
-        limit: 10,
-        lastActivity: SortOrder.asc,
-      });
-
-      expect(roomsRepository.findAllPaginated).toHaveBeenCalledWith(
-        expect.objectContaining({
-          orderBy: [{ lastActivityAt: SortOrder.asc }],
+          orderBy: [{ members: { _count: SortOrder.asc } }],
         }),
       );
     });
 
     it('defaults to membersCount desc when no sorting provided', async () => {
-      roomsRepository.findUserAccountStatus.mockResolvedValue({
-        accountStatus: AccountStatus.ACTIVE,
-      });
       roomsRepository.findAllPaginated.mockResolvedValue({ rooms: [], total: 0 });
 
       await service.findAll('user-id', { page: 1, limit: 10 });
@@ -328,10 +320,21 @@ describe('RoomsService', () => {
       );
     });
 
+    it('passes pagination params to repository', async () => {
+      roomsRepository.findAllPaginated.mockResolvedValue({ rooms: [], total: 0 });
+
+      await service.findAll('user-id', { page: 2, limit: 5 });
+
+      expect(roomsRepository.findAllPaginated).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: 'user-id',
+          skip: 5,
+          take: 5,
+        }),
+      );
+    });
+
     it('maps members with minimal user data', async () => {
-      roomsRepository.findUserAccountStatus.mockResolvedValue({
-        accountStatus: AccountStatus.ACTIVE,
-      });
       roomsRepository.findAllPaginated.mockResolvedValue({
         rooms: [
           {
@@ -343,7 +346,6 @@ describe('RoomsService', () => {
             maxAge: 100,
             languages: [RoomLanguage.EN],
             photoUrl: null,
-            lastActivityAt: null,
             createdAt: new Date('2026-02-01T10:00:00.000Z'),
             _count: { members: 2 },
             members: [
@@ -379,62 +381,17 @@ describe('RoomsService', () => {
       ]);
     });
 
-    it('throws UnauthorizedException when fetching rooms list without userId', async () => {
-      await expect(service.findAll(undefined, { page: 1, limit: 10 })).rejects.toThrow(
-        UnauthorizedException,
-      );
-      expect(roomsRepository.findUserAccountStatus).not.toHaveBeenCalled();
-    });
+    it('calculates totalPages from total and limit', async () => {
+      roomsRepository.findAllPaginated.mockResolvedValue({ rooms: [], total: 11 });
 
-    it('throws NotFoundException when list user is not found', async () => {
-      roomsRepository.findUserAccountStatus.mockResolvedValue(null);
+      const result = await service.findAll('user-id', { page: 1, limit: 10 });
 
-      await expect(service.findAll('user-id', { page: 1, limit: 10 })).rejects.toThrow(
-        NotFoundException,
-      );
-    });
-
-    it('throws ForbiddenException when list user is blocked', async () => {
-      roomsRepository.findUserAccountStatus.mockResolvedValue({
-        accountStatus: AccountStatus.BLOCKED,
-      });
-
-      await expect(service.findAll('user-id', { page: 1, limit: 10 })).rejects.toThrow(
-        ForbiddenException,
-      );
+      expect(result.totalPages).toBe(2);
     });
   });
 
   describe('findOne', () => {
-    it('throws UnauthorizedException when userId is missing', async () => {
-      await expect(service.findOne(undefined, 'room-id')).rejects.toThrow(
-        UnauthorizedException,
-      );
-      expect(roomsRepository.findUserAccountStatus).not.toHaveBeenCalled();
-    });
-
-    it('throws NotFoundException when user is not found', async () => {
-      roomsRepository.findUserAccountStatus.mockResolvedValue(null);
-
-      await expect(service.findOne('user-id', 'room-id')).rejects.toThrow(
-        NotFoundException,
-      );
-    });
-
-    it('throws ForbiddenException when user is blocked', async () => {
-      roomsRepository.findUserAccountStatus.mockResolvedValue({
-        accountStatus: AccountStatus.BLOCKED,
-      });
-
-      await expect(service.findOne('user-id', 'room-id')).rejects.toThrow(
-        ForbiddenException,
-      );
-    });
-
     it('throws NotFoundException when room is not found', async () => {
-      roomsRepository.findUserAccountStatus.mockResolvedValue({
-        accountStatus: AccountStatus.ACTIVE,
-      });
       roomsRepository.findRoomWithMembers.mockResolvedValue(null);
 
       await expect(service.findOne('user-id', 'room-id')).rejects.toThrow(
@@ -443,9 +400,6 @@ describe('RoomsService', () => {
     });
 
     it('throws ForbiddenException when user is not a member', async () => {
-      roomsRepository.findUserAccountStatus.mockResolvedValue({
-        accountStatus: AccountStatus.ACTIVE,
-      });
       roomsRepository.findRoomWithMembers.mockResolvedValue(
         buildRoom([{ userId: 'other-user' }]),
       );
@@ -453,25 +407,56 @@ describe('RoomsService', () => {
       await expect(service.findOne('user-id', 'room-id')).rejects.toThrow(
         ForbiddenException,
       );
-      expect(roomsRepository.touchRoomActivity).not.toHaveBeenCalled();
     });
 
-    it('touches room activity when fetching room details', async () => {
-      roomsRepository.findUserAccountStatus.mockResolvedValue({
-        accountStatus: AccountStatus.ACTIVE,
-      });
-      roomsRepository.findRoomWithMembers.mockResolvedValue(buildRoom([{ userId: 'user-id' }]));
-      roomsRepository.touchRoomActivity.mockResolvedValue(undefined);
+    it('maps member details including age and gender', async () => {
+      const now = new Date('2026-02-18T12:00:00.000Z');
+      jest.useFakeTimers().setSystemTime(now);
 
-      await service.findOne('user-id', 'room-id');
+      try {
+        roomsRepository.findRoomWithMembers.mockResolvedValue({
+          id: 'room-id',
+          name: 'Room',
+          type: RoomType.PUBLIC,
+          status: RoomStatus.ACTIVE,
+          minAge: 12,
+          maxAge: 100,
+          languages: [RoomLanguage.EN],
+          interests: [],
+          media: [],
+          createdAt: new Date('2026-02-01T10:00:00.000Z'),
+          members: [
+            {
+              userId: 'user-id',
+              role: RoomMemberRole.MEMBER,
+              user: {
+                data: {
+                  firstName: 'Ada',
+                  lastName: 'Lovelace',
+                  avatar: 'a.png',
+                  birthDate: new Date('2006-02-18T00:00:00.000Z'),
+                  gender: Gender.FEMALE,
+                },
+              },
+            },
+          ],
+        } as any);
 
-      expect(roomsRepository.touchRoomActivity).toHaveBeenCalledWith(
-        expect.objectContaining({
-          roomId: 'room-id',
-          userId: 'user-id',
-          at: expect.any(Date),
-        }),
-      );
+        const result = await service.findOne('user-id', 'room-id');
+
+        expect(result.members).toEqual([
+          {
+            firstName: 'Ada',
+            lastName: 'Lovelace',
+            avatar: 'a.png',
+            age: 20,
+            gender: Gender.FEMALE,
+            role: RoomMemberRole.MEMBER,
+          },
+        ]);
+      } finally {
+        jest.useRealTimers();
+      }
     });
   });
 });

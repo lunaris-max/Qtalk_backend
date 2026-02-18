@@ -17,12 +17,4 @@ export class GetRoomsQueryDto extends PaginationQueryDto {
   @IsOptional()
   membersCount?: SortOrder;
 
-  @ApiPropertyOptional({
-    enum: SortOrder,
-    example: SortOrder.desc,
-    description: 'Sort order for last activity',
-  })
-  @IsEnum(SortOrder)
-  @IsOptional()
-  lastActivity?: SortOrder;
 }

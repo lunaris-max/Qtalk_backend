@@ -9,15 +9,10 @@ and this project adheres to Semantic Versioning.
 
 ### Added
 
-- `lastActivityAt` fields for Room and RoomMember with indexes
-- Rooms list sorting by last activity and/or members count using `lastActivity` and `membersCount` order params
 - Rooms list now returns only rooms where the user is a member or owner
 - Rooms list items now include members with basic user data and role
-- Room list items include `lastActivityAt`
 
 ### Changed
-
-- Room activity is updated on GET `/v1/rooms/:id`
 
 ## [0.0.13] - 2026-02-11
 

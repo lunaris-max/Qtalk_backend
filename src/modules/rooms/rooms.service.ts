@@ -157,21 +157,7 @@ export class RoomsService {
     ];
   }
 
-  async findOne(userId: string | undefined, roomId: string): Promise<RoomDetailsDto> {
-    if (!userId) {
-      this.logger.warn('Room fetch attempt without authentication');
-      throw new UnauthorizedException('User is not authenticated');
-    }
-
-    const user = await this.roomsRepository.findUserAccountStatus(userId);
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
-    if (user.accountStatus !== AccountStatus.ACTIVE) {
-      throw new ForbiddenException('User is not allowed to access rooms');
-    }
+  async findOne(userId: string, roomId: string): Promise<RoomDetailsDto> {
 
     const room = await this.roomsRepository.findRoomWithMembers(roomId);
 
@@ -184,12 +170,6 @@ export class RoomsService {
     if (!isMember) {
       throw new ForbiddenException('User is not a room member');
     }
-
-    await this.roomsRepository.touchRoomActivity({
-      roomId,
-      userId,
-      at: new Date(),
-    });
 
     return {
       id: room.id,
@@ -213,22 +193,7 @@ export class RoomsService {
     };
   }
 
-  async findAll(userId: string | undefined, query: GetRoomsQueryDto): Promise<PaginatedRoomsDto> {
-    if (!userId) {
-      this.logger.warn('Rooms list fetch attempt without authentication');
-      throw new UnauthorizedException('User is not authenticated');
-    }
-
-    const user = await this.roomsRepository.findUserAccountStatus(userId);
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
-    if (user.accountStatus !== AccountStatus.ACTIVE) {
-      throw new ForbiddenException('User is not allowed to access rooms');
-    }
-
+  async findAll(userId: string, query: GetRoomsQueryDto): Promise<PaginatedRoomsDto> {
     const page = query.page ?? 1;
     const limit = query.limit ?? 10;
     const skip = (page - 1) * limit;
@@ -243,8 +208,6 @@ export class RoomsService {
     pushOrderBy(
       query.membersCount ? { members: { _count: query.membersCount } } : undefined,
     );
-    pushOrderBy(query.lastActivity ? { lastActivityAt: query.lastActivity } : undefined);
-
     if (!orderBy.length) {
       orderBy.push({ members: { _count: SortOrder.desc } });
     }
@@ -266,7 +229,6 @@ export class RoomsService {
         maxAge: room.maxAge,
         languages: room.languages,
         photoUrl: room.photoUrl ?? undefined,
-        lastActivityAt: room.lastActivityAt ?? undefined,
         membersCount: room._count.members,
         members: room.members.map((member) => ({
           firstName: member.user.data?.firstName ?? undefined,

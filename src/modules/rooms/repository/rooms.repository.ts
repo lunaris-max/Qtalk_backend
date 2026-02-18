@@ -204,30 +204,6 @@ export class RoomsRepository {
     });
   }
 
-  async touchRoomActivity(params: { roomId: string; userId: string; at: Date }) {
-    const { roomId, userId, at } = params;
-
-    await this.prisma.$transaction([
-      this.prisma.roomMember.update({
-        where: {
-          roomId_userId: {
-            roomId,
-            userId,
-          },
-        },
-        data: {
-          lastActivityAt: at,
-        },
-      }),
-      this.prisma.room.update({
-        where: { id: roomId },
-        data: {
-          lastActivityAt: at,
-        },
-      }),
-    ]);
-  }
-
   async findAllPaginated(params: {
     userId: string;
     skip: number;
@@ -258,7 +234,6 @@ export class RoomsRepository {
           maxAge: true,
           languages: true,
           photoUrl: true,
-          lastActivityAt: true,
           createdAt: true,
           members: {
             select: {

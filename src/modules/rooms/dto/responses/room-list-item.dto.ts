@@ -58,10 +58,4 @@ export class RoomListItemDto {
 
   @ApiProperty({ example: '2026-02-04T10:00:00.000Z' })
   createdAt: Date;
-
-  @ApiProperty({
-    example: '2026-02-17T10:00:00.000Z',
-    required: false,
-  })
-  lastActivityAt?: Date | null;
 }
