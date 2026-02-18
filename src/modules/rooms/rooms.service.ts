@@ -9,7 +9,8 @@ import {
 } from '@nestjs/common';
 import { AccountStatus, Prisma, RoomLanguage } from '@prisma/client';
 import { CreateRoomDto } from './dto/create-room.dto';
-import { CreatedRoomDto, RoomDetailsDto } from './dto/responses';
+import { GetRoomsQueryDto, SortOrder } from './dto/get-rooms.query.dto';
+import { CreatedRoomDto, PaginatedRoomsDto, RoomDetailsDto } from './dto/responses';
 import { RoomsRepository } from './repository/rooms.repository';
 import { CloudinaryService } from '@src/infra/cloudinary/cloudinary.service';
 import { MediaCreateInput, UploadResult } from './types';
@@ -156,21 +157,7 @@ export class RoomsService {
     ];
   }
 
-  async findOne(userId: string | undefined, roomId: string): Promise<RoomDetailsDto> {
-    if (!userId) {
-      this.logger.warn('Room fetch attempt without authentication');
-      throw new UnauthorizedException('User is not authenticated');
-    }
-
-    const user = await this.roomsRepository.findUserAccountStatus(userId);
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
-    if (user.accountStatus !== AccountStatus.ACTIVE) {
-      throw new ForbiddenException('User is not allowed to access rooms');
-    }
+  async findOne(userId: string, roomId: string): Promise<RoomDetailsDto> {
 
     const room = await this.roomsRepository.findRoomWithMembers(roomId);
 
@@ -203,6 +190,58 @@ export class RoomsService {
         gender: member.user.data?.gender ?? undefined,
         role: member.role,
       })),
+    };
+  }
+
+  async findAll(userId: string, query: GetRoomsQueryDto): Promise<PaginatedRoomsDto> {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 10;
+    const skip = (page - 1) * limit;
+
+    const orderBy: Prisma.RoomOrderByWithRelationInput[] = [];
+    const pushOrderBy = (value?: Prisma.RoomOrderByWithRelationInput) => {
+      if (value) {
+        orderBy.push(value);
+      }
+    };
+
+    pushOrderBy(
+      query.membersCount ? { members: { _count: query.membersCount } } : undefined,
+    );
+    if (!orderBy.length) {
+      orderBy.push({ members: { _count: SortOrder.desc } });
+    }
+
+    const { rooms, total } = await this.roomsRepository.findAllPaginated({
+      userId,
+      skip,
+      take: limit,
+      orderBy,
+    });
+
+    return {
+      items: rooms.map((room) => ({
+        id: room.id,
+        name: room.name,
+        type: room.type,
+        status: room.status,
+        minAge: room.minAge,
+        maxAge: room.maxAge,
+        languages: room.languages,
+        photoUrl: room.photoUrl ?? undefined,
+        membersCount: room._count.members,
+        members: room.members.map((member) => ({
+          firstName: member.user.data?.firstName ?? undefined,
+          lastName: member.user.data?.lastName ?? undefined,
+          avatar: member.user.data?.avatar ?? undefined,
+          role: member.role,
+        })),
+        createdAt: room.createdAt,
+      })),
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
     };
   }
 }

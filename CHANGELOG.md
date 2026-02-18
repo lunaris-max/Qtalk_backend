@@ -5,11 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog,
 and this project adheres to Semantic Versioning.
 
+## [0.0.15] - 2026-02-17
+
+### Added
+
+- Rooms list now returns only rooms where the user is a member or owner
+- Rooms list items now include members with basic user data and role
+
+### Changed
+
 ## [0.0.13] - 2026-02-11
 
 ### Changed
 
 - user age(int) changed to birthDate (DateTime)
+
+## [0.0.14] - 2026-02-17
+
+### Added
+
+- GET `/v1/rooms` endpoint for rooms list with pagination and sorting by members count
+- Rooms list query DTO (`page`, `limit`, `sort`, `order`)
+- Rooms list response DTOs: `RoomListItemDto` and `PaginatedRoomsDto`
+- Swagger docs for rooms list
+
+### Changed
+
+- Rooms repository now supports paginated list retrieval with members count
 
 ## [0.0.12] - 2026-02-04
 
