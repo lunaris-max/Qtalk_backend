@@ -13,7 +13,7 @@ import { PaginatedResponseDto } from '@src/common/dto/paginated-response.dto';
 import { UserListItemDto } from './dto/user-list-item.dto';
 import { FindOneUserQueryDto } from './dto/find-one-user.query.dto';
 import { FullUserDto } from './dto/full-user.dto';
-import { AccountStatus, AuthProvider, Permission, Prisma } from '@prisma/client';
+import { AccountStatus, Permission, Prisma } from '@prisma/client';
 import { CreatedUserDto } from '@src/modules/users/dto/created-user.dto';
 import { pickDefined } from '@src/common/utils/pick-defined';
 import { UpdatedUserDto } from '@src/modules/users/dto/updated-user.dto';

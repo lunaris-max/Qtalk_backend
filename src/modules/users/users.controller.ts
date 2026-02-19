@@ -76,7 +76,7 @@ export class UsersController {
   // create guest
   @Post(routesV1.user.createGuest)
   @ApiOperation({ summary: 'Register guest user' })
-    @ApiCreatedResponse({
+  @ApiCreatedResponse({
     description: 'User successfully created',
     type: GuestResponseDto,
   })

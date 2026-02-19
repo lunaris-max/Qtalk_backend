@@ -158,7 +158,6 @@ export class RoomsService {
   }
 
   async findOne(userId: string, roomId: string): Promise<RoomDetailsDto> {
-
     const room = await this.roomsRepository.findRoomWithMembers(roomId);
 
     if (!room) {
@@ -205,9 +204,7 @@ export class RoomsService {
       }
     };
 
-    pushOrderBy(
-      query.membersCount ? { members: { _count: query.membersCount } } : undefined,
-    );
+    pushOrderBy(query.membersCount ? { members: { _count: query.membersCount } } : undefined);
     if (!orderBy.length) {
       orderBy.push({ members: { _count: SortOrder.desc } });
     }

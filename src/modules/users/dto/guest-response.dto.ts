@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Expose } from 'class-transformer';
-import { AccountStatus, AuthProvider } from '@prisma/client';
+import { AuthProvider } from '@prisma/client';
 
 export class GuestResponseDto {
   @ApiProperty()
@@ -14,7 +14,6 @@ export class GuestResponseDto {
   @ApiProperty({ enum: AuthProvider })
   @Expose()
   provider: AuthProvider;
-
 
   @ApiProperty()
   @Expose()

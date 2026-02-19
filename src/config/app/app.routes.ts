@@ -29,7 +29,7 @@ export const routesV1 = {
     findOne: `/${authRoot}/:id`,
     update: `/${authRoot}/:id`,
     refresh: `/${authRoot}/refresh`,
-    registerUser:authRoot,
+    registerUser: authRoot,
     registerGuest: `/${authRoot}/guest`,
     login: `/${authRoot}/login`,
     google: `/${authRoot}/google`,

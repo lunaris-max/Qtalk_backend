@@ -70,7 +70,6 @@ export class AuthController {
     return { user, accessToken };
   }
 
-
   // =========================
   // REGISTER (GUEST)
   // =========================

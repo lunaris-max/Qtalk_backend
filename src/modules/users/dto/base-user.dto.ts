@@ -22,7 +22,6 @@ export class BaseUserDto {
   @ApiPropertyOptional({
     example: 'Description',
   })
-
   @Expose()
   @IsOptional()
   @IsString()
@@ -38,7 +37,7 @@ export class BaseUserDto {
   profileTheme?: string;
 
   @ApiPropertyOptional()
-    @ApiPropertyOptional({
+  @ApiPropertyOptional({
     example: '2000-05-15T00:00:00.000Z',
     description: 'User birth date (ISO 8601 format)',
     type: String,

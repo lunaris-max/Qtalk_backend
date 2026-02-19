@@ -401,7 +401,8 @@ export class UsersRepository {
       },
     });
   }
-  async getUserPermissions(userId: string, tenantId: string) {
+
+  async getTenantUserWithPermissions(userId: string, tenantId: string) {
     const tenantUser = await this.prisma.tenantUser.findUnique({
       where: {
         userId_tenantId: {
@@ -411,6 +412,7 @@ export class UsersRepository {
       },
       include: {
         permissions: true,
+        
       },
     });
 
@@ -418,6 +420,6 @@ export class UsersRepository {
       return null;
     }
 
-    return tenantUser.permissions.map((p) => p.permission);
+    return tenantUser;
   }
 }
