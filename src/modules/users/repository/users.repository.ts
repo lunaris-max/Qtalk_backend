@@ -412,7 +412,6 @@ export class UsersRepository {
       },
       include: {
         permissions: true,
-        
       },
     });
 

@@ -52,12 +52,9 @@ export class PermissionGuard implements CanActivate {
       throw new ForbiddenException('Tenant missing');
     }
 
-
-
     // check if permissions exist
     if (!request.permissions) {
-      const TenantUser = await this.UserRepository.getTenantUserWithPermissions(user.id, tenantId);     
-
+      const TenantUser = await this.UserRepository.getTenantUserWithPermissions(user.id, tenantId);
 
       if (!TenantUser?.permissions) {
         throw new ForbiddenException('User not in tenant');
