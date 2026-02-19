@@ -204,6 +204,41 @@ export class RoomsRepository {
     });
   }
 
+  async countReportsByUserSince(userId: string, since: Date) {
+    return this.prisma.roomReport.count({
+      where: {
+        reporterId: userId,
+        createdAt: { gte: since },
+      },
+    });
+  }
+
+  async createRoomReport(params: {
+    roomId: string;
+    reporterId: string;
+    reason: string;
+    details?: string;
+  }) {
+    return this.prisma.roomReport.create({
+      data: {
+        roomId: params.roomId,
+        reporterId: params.reporterId,
+        reason: params.reason,
+        details: params.details,
+      },
+    });
+  }
+
+  async findUserEmail(userId: string) {
+    return this.prisma.authMethod.findFirst({
+      where: {
+        userId,
+        email: { not: null },
+      },
+      select: { email: true },
+    });
+  }
+
   async findAllPaginated(params: {
     userId: string;
     skip: number;

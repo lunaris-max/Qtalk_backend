@@ -67,6 +67,7 @@ model User {
   userInterests      UserInterest[]
   ownedRooms         Room[]        @relation("RoomOwner")
   roomMembers        RoomMember[]
+  roomReports        RoomReport[]
   emailVerifications EmailVerification[]
   passwordResets PasswordReset[]
 }
@@ -140,6 +141,7 @@ model Room {
   members   RoomMember[]
   interests RoomInterest[]
   media     Media[]
+  reports   RoomReport[]
 }
 
 model Media {
@@ -180,6 +182,21 @@ model RoomInterest {
   interest Interest @relation(fields: [interestId], references: [id], onDelete: Cascade)
 
   @@id([roomId, interestId])
+}
+
+model RoomReport {
+  id         String   @id @default(uuid())
+  roomId     String
+  reporterId String
+  reason     String   @db.VarChar(100)
+  details    String?  @db.VarChar(1000)
+  createdAt  DateTime @default(now())
+
+  room       Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  reporter   User @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+
+  @@index([reporterId, createdAt])
+  @@index([roomId])
 }
 
 model EmailVerification {

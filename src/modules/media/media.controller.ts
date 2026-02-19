@@ -8,7 +8,6 @@ import {
 import { ApiExcludeEndpoint, ApiTags } from '@nestjs/swagger';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
-import type { Express } from 'express';
 
 import { routesV1 } from '@src/config';
 import { MediaService } from './media.service';
