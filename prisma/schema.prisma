@@ -9,7 +9,7 @@ datasource db {
 
 model Tenant {
   id          String   @id @default(uuid())
-  name        String
+  name        String   @unique
   createdAt   DateTime @default(now())
 
   domains     TenantDomain[]
@@ -249,6 +249,8 @@ enum AuthProvider {
   FACEBOOK
   APPLEID
   GITHUB
+  GUEST
+
 }
 
 enum InterestCategory {

@@ -68,6 +68,39 @@ export class UsersRepository {
     });
   }
 
+  async createGuest(data: {
+    login: string;
+    profile?: {
+      firstName?: string;
+      lastName?: string;
+      description?: string;
+      avatar?: string;
+      profileTheme?: string;
+      birthDate?: Date;
+      gender?: Gender;
+    };
+  }) {
+    return this.prisma.user.create({
+      data: {
+        authMethods: {
+          create: {
+            provider: AuthProvider.GUEST,
+            providerId: data.login,
+            login: data.login,
+          },
+        },
+        data: data.profile
+          ? {
+              create: data.profile,
+            }
+          : undefined,
+      },
+      include: {
+        authMethods: true,
+      },
+    });
+  }
+
   // find all paginated
   async findAllPaginated(params: { skip: number; take: number }) {
     const { skip, take } = params;
